@@ -72,3 +72,52 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* Ensure Tailwind classes are not purged */
+.bg-\[\#011936\] {
+  background-color: #011936;
+}
+
+.text-\[\#C2EABD\] {
+  color: #C2EABD;
+}
+
+.border-\[\#C2EABD\] {
+  border-color: #C2EABD;
+}
+
+.bg-\[\#C2EABD\] {
+  background-color: #C2EABD;
+}
+
+.from-\[\#C2EABD\] {
+  --tw-gradient-from: #C2EABD;
+}
+
+.to-\[\#A3D5FF\] {
+  --tw-gradient-to: #A3D5FF;
+}
+
+.text-\[\#011936\] {
+  color: #011936;
+}
+
+.bg-\[\#011936\]\/95 {
+  background-color: rgb(1 25 54 / 0.95);
+}
+
+.border-\[\#C2EABD\]\/20 {
+  border-color: rgb(194 234 189 / 0.2);
+}
+
+.text-\[\#C2EABD\]\/80 {
+  color: rgb(194 234 189 / 0.8);
+}
+
+.hover\:bg-\[\#C2EABD\]\/10:hover {
+  background-color: rgb(194 234 189 / 0.1);
+}
+
+.hover\:bg-\[\#C2EABD\]\/90:hover {
+  background-color: rgb(194 234 189 / 0.9);
+}

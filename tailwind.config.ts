@@ -50,5 +50,19 @@ const config: Config = {
     },
   },
   plugins: [],
+  safelist: [
+    'bg-[#011936]',
+    'text-[#C2EABD]',
+    'border-[#C2EABD]',
+    'bg-[#C2EABD]',
+    'from-[#C2EABD]',
+    'to-[#A3D5FF]',
+    'text-[#011936]',
+    'bg-[#011936]/95',
+    'border-[#C2EABD]/20',
+    'text-[#C2EABD]/80',
+    'hover:bg-[#C2EABD]/10',
+    'hover:bg-[#C2EABD]/90',
+  ]
 }
 export default config
