@@ -1,15 +1,16 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useSpring, type SpringOptions } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FileUpload } from '@/components/ui/file-upload';
-import { ImageIcon, CalendarIcon } from '@radix-ui/react-icons';
+import { ImageIcon, CalendarIcon, ClockIcon, CheckCircledIcon } from '@radix-ui/react-icons';
 import { Loader2Icon } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Header from '@/components/header';
 import { processCalendarImage } from '@/lib/imageProcessing';
 import { AnimatedGridPattern } from '@/components/ui/animated-grid';
+import { AnimatedCalendar } from '@/components/ui/animated-calendar';
 
 interface ExtractedEvent {
   title: string;
@@ -18,9 +19,19 @@ interface ExtractedEvent {
   description?: string;
 }
 
+const springConfig: SpringOptions = {
+  damping: 30,
+  stiffness: 100,
+  mass: 2,
+};
+
 export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedEvents, setExtractedEvents] = useState<ExtractedEvent[]>([]);
+  const uploadRef = useRef<HTMLDivElement>(null);
+  const uploadRotateX = useSpring(0, springConfig);
+  const uploadRotateY = useSpring(0, springConfig);
+  const uploadScale = useSpring(1, springConfig);
 
   const handleFileUpload = async (files: File[]) => {
     if (files.length > 0) {
@@ -36,6 +47,17 @@ export default function Home() {
     }
   };
 
+  function handleUploadMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!uploadRef.current) return;
+    const rect = uploadRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const rotateYValue = ((e.clientX - centerX) / (rect.width / 2)) * 14;
+    const rotateXValue = ((e.clientY - centerY) / (rect.height / 2)) * -14;
+    uploadRotateX.set(rotateXValue);
+    uploadRotateY.set(rotateYValue);
+  }
+
   return (
     <div className="min-h-screen bg-[#011936] relative overflow-hidden">
       <AnimatedGridPattern className="opacity-30" />
@@ -45,38 +67,107 @@ export default function Home() {
         {/* Hero Section */}
         <section className="px-4 pt-32 pb-16 md:pt-40 md:pb-24">
           <div className="container mx-auto max-w-6xl">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-center md:text-left"
+              >
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-[#C2EABD] via-[#A3D5FF] to-[#C2EABD] bg-clip-text text-transparent">
+                  Schedule Smarter with AI
+                </h1>
+                <p className="text-lg md:text-xl text-[#C2EABD]/90 mb-8 max-w-2xl">
+                  Transform your photos and screenshots into calendar events instantly. 
+                  Let AI handle the scheduling while you focus on what matters.
+                </p>
+                <div className="flex gap-4 justify-center md:justify-start">
+                  <Button className="bg-[#C2EABD] hover:bg-[#A3D5FF] text-[#011936] px-8 py-6 text-lg font-medium">
+                    Get Started
+                  </Button>
+                  <Button variant="outline" className="border-[#C2EABD] text-[#C2EABD] hover:bg-[#C2EABD]/10 px-8 py-6 text-lg">
+                    Try Demo
+                  </Button>
+                </div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="flex justify-center"
+              >
+                <AnimatedCalendar />
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-24 bg-white/95 backdrop-blur-md relative">
+          <div className="container mx-auto max-w-6xl px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="text-center"
+              className="text-center mb-16"
             >
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-[#C2EABD] via-[#A3D5FF] to-[#C2EABD] bg-clip-text text-transparent">
-                Schedule Smarter with AI
-              </h1>
-              <p className="text-lg md:text-xl text-[#C2EABD]/90 mb-8 max-w-2xl mx-auto">
-                Transform your photos and screenshots into calendar events instantly. 
-                Let AI handle the scheduling while you focus on what matters.
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#011936]">
+                Why Choose PicScheduler?
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Experience the future of calendar management with our powerful features
               </p>
-              <div className="flex gap-4 justify-center">
-                <Button className="bg-[#C2EABD] hover:bg-[#A3D5FF] text-[#011936] px-8 py-6 text-lg font-medium">
-                  Get Started
-                </Button>
-                <Button variant="outline" className="border-[#C2EABD] text-[#C2EABD] hover:bg-[#C2EABD]/10 px-8 py-6 text-lg">
-                  Try Demo
-                </Button>
-              </div>
             </motion.div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  icon: ImageIcon,
+                  title: "Smart Recognition",
+                  description: "Our AI accurately extracts event details from any image format - screenshots, photos, or PDFs."
+                },
+                {
+                  icon: CalendarIcon,
+                  title: "Multi-Calendar Support",
+                  description: "Seamlessly sync with Google Calendar, Apple Calendar, Outlook, and more."
+                },
+                {
+                  icon: ClockIcon,
+                  title: "Time-Saving",
+                  description: "Reduce manual entry time by up to 90% with automated event creation."
+                }
+              ].map((feature, index) => (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <Card className="p-6 bg-gradient-to-br from-white to-[#C2EABD]/10 border border-[#C2EABD] relative overflow-hidden group hover:shadow-lg hover:shadow-[#C2EABD]/20 transition-all duration-300">
+                    <div className="flex flex-col items-center text-center gap-4">
+                      <div className="p-3 rounded-lg bg-[#011936]">
+                        <feature.icon className="w-6 h-6 text-[#C2EABD]" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-[#011936]">{feature.title}</h3>
+                      <p className="text-gray-600">{feature.description}</p>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Demo Section */}
-        <section className="py-24 px-4">
+        <section className="py-24 px-4 bg-[#011936]">
           <div className="container mx-auto max-w-4xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
               className="text-center mb-12"
             >
               <h2 className="text-3xl font-bold mb-4 text-[#C2EABD]">Try It Now</h2>
@@ -85,33 +176,182 @@ export default function Home() {
               </p>
             </motion.div>
 
-            <Card className="p-8 bg-white/10 backdrop-blur-sm border border-[#C2EABD]/20">
-              <FileUpload onChange={handleFileUpload} />
-              
-              {isProcessing && (
-                <div className="flex items-center justify-center gap-2 mt-4 text-[#C2EABD]">
-                  <Loader2Icon className="w-5 h-5 animate-spin" />
-                  <span>Processing image...</span>
-                </div>
-              )}
+            <motion.div
+              ref={uploadRef}
+              className="relative [perspective:800px]"
+              onMouseMove={handleUploadMouseMove}
+              onMouseEnter={() => uploadScale.set(1.02)}
+              onMouseLeave={() => {
+                uploadScale.set(1);
+                uploadRotateX.set(0);
+                uploadRotateY.set(0);
+              }}
+            >
+              <motion.div
+                className="[transform-style:preserve-3d]"
+                style={{ rotateX: uploadRotateX, rotateY: uploadRotateY, scale: uploadScale }}
+              >
+                <Card className="p-8 bg-white/10 backdrop-blur-sm border border-[#C2EABD]/20">
+                  <FileUpload onChange={handleFileUpload} />
+                  
+                  {isProcessing && (
+                    <div className="flex items-center justify-center gap-2 mt-4 text-[#C2EABD]">
+                      <Loader2Icon className="w-5 h-5 animate-spin" />
+                      <span>Processing image...</span>
+                    </div>
+                  )}
 
-              {extractedEvents.length > 0 && (
-                <div className="mt-8 space-y-4">
-                  <h3 className="text-xl font-semibold mb-4 text-[#C2EABD]">Extracted Events</h3>
-                  {extractedEvents.map((event, index) => (
-                    <Card key={index} className="p-4 bg-white/5 border border-[#C2EABD]/20">
-                      <h4 className="font-medium text-[#C2EABD]">{event.title}</h4>
-                      <p className="text-sm text-[#C2EABD]/80">
-                        {event.date.toLocaleDateString()} {event.time}
-                      </p>
-                      {event.description && (
-                        <p className="text-sm text-[#C2EABD]/80 mt-2">{event.description}</p>
-                      )}
-                    </Card>
-                  ))}
+                  {extractedEvents.length > 0 && (
+                    <div className="mt-8 space-y-4">
+                      <h3 className="text-xl font-semibold mb-4 text-[#C2EABD]">Extracted Events</h3>
+                      {extractedEvents.map((event, index) => (
+                        <Card key={index} className="p-4 bg-white/5 border border-[#C2EABD]/20">
+                          <h4 className="font-medium text-[#C2EABD]">{event.title}</h4>
+                          <p className="text-sm text-[#C2EABD]/80">
+                            {event.date.toLocaleDateString()} {event.time}
+                          </p>
+                          {event.description && (
+                            <p className="text-sm text-[#C2EABD]/80 mt-2">{event.description}</p>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Benefits Section */}
+        <section className="py-24 bg-[#C2EABD] relative">
+          <div className="container mx-auto max-w-6xl px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#011936]">
+                Benefits That Make a Difference
+              </h2>
+              <p className="text-[#011936]/80 max-w-2xl mx-auto">
+                See how PicScheduler transforms your calendar management
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              {[
+                "Save hours of manual data entry each week",
+                "Reduce scheduling errors with AI accuracy",
+                "Access your schedule from any device",
+                "Integrate with your favorite calendar apps",
+                "Keep your data secure with encryption",
+                "Get 24/7 customer support"
+              ].map((benefit, index) => (
+                <motion.div
+                  key={benefit}
+                  initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="flex items-center gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-lg"
+                >
+                  <CheckCircledIcon className="w-6 h-6 text-[#011936]" />
+                  <p className="text-[#011936] font-medium">{benefit}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-24 bg-[#011936] relative">
+          <div className="container mx-auto max-w-4xl px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#C2EABD]">
+                Frequently Asked Questions
+              </h2>
+              <p className="text-[#C2EABD]/80 max-w-2xl mx-auto">
+                Find answers to common questions about PicScheduler
+              </p>
+            </motion.div>
+
+            <div className="space-y-6">
+              {[
+                {
+                  q: "What types of images can I upload?",
+                  a: "You can upload any image containing event information, including screenshots of emails, digital tickets, event invitations, and physical documents. Our AI can process both digital and printed text."
+                },
+                {
+                  q: "How accurate is the information extraction?",
+                  a: "Our AI is highly accurate and continuously improving. It's specifically trained to recognize common date formats, times, locations, and event details. You can always review and edit the extracted information before adding it to your calendar."
+                },
+                {
+                  q: "Which calendar apps are supported?",
+                  a: "PicScheduler integrates with all major calendar applications including Google Calendar, Apple Calendar, Microsoft Outlook, and any calendar that supports .ics files."
+                },
+                {
+                  q: "Is my data secure?",
+                  a: "Yes, we take security seriously. All uploaded images are encrypted, processed securely, and automatically deleted after processing. We never store your calendar data or personal information without your explicit consent."
+                }
+              ].map((faq, index) => (
+                <motion.div
+                  key={faq.q}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <Card className="p-6 bg-white/5 backdrop-blur-sm border border-[#C2EABD]/20">
+                    <h3 className="text-lg font-semibold mb-3 text-[#C2EABD]">{faq.q}</h3>
+                    <p className="text-[#C2EABD]/80">{faq.a}</p>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Final CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="text-center mt-16"
+            >
+              <div className="p-8 rounded-2xl bg-gradient-to-br from-[#C2EABD] to-[#A3D5FF] relative overflow-hidden">
+                <AnimatedGridPattern 
+                  className="opacity-30 mix-blend-overlay" 
+                  width={30} 
+                  height={30} 
+                  numSquares={30}
+                  maxOpacity={0.4}
+                  duration={5}
+                />
+                <div className="relative z-10">
+                  <h3 className="text-2xl font-bold mb-4 text-[#011936]">
+                    Ready to transform your scheduling?
+                  </h3>
+                  <p className="text-[#011936]/90 mb-6 max-w-2xl mx-auto">
+                    Join thousands of users who are already saving time with PicScheduler
+                  </p>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="bg-[#011936] text-[#C2EABD] px-8 py-3 rounded-lg font-medium hover:bg-[#011936]/90 transition-colors"
+                  >
+                    Get Started for Free
+                  </motion.button>
                 </div>
-              )}
-            </Card>
+              </div>
+            </motion.div>
           </div>
         </section>
       </div>
