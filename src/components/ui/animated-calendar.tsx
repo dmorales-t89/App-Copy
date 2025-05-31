@@ -42,10 +42,10 @@ export function AnimatedCalendar() {
         className="w-full h-full [transform-style:preserve-3d]"
         style={{ rotateX, rotateY, scale }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#011936] to-[#0A2F5E] rounded-2xl shadow-xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#C2EABD] to-[#A3D5FF] rounded-2xl shadow-xl">
           {/* Calendar Header */}
-          <div className="bg-[#C2EABD]/20 backdrop-blur-sm p-4 rounded-t-2xl border-b border-[#C2EABD]/20">
-            <div className="text-[#C2EABD] font-semibold text-lg text-center">
+          <div className="bg-[#011936]/20 backdrop-blur-sm p-4 rounded-t-2xl border-b border-[#011936]/20">
+            <div className="text-[#011936] font-semibold text-lg text-center">
               {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
             </div>
           </div>
@@ -53,7 +53,7 @@ export function AnimatedCalendar() {
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-1 p-4">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
-              <div key={day} className="text-[#C2EABD]/80 text-center text-sm font-medium">
+              <div key={day} className="text-[#011936]/80 text-center text-sm font-medium">
                 {day}
               </div>
             ))}
@@ -61,12 +61,12 @@ export function AnimatedCalendar() {
               <motion.div
                 key={i}
                 className="aspect-square flex items-center justify-center"
-                whileHover={{ scale: 1.2, color: '#C2EABD' }}
+                whileHover={{ scale: 1.2, color: '#011936' }}
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.02 }}
               >
-                <span className="text-[#C2EABD]/90 text-sm">{i + 1}</span>
+                <span className="text-[#011936]/90 text-sm">{i + 1}</span>
               </motion.div>
             ))}
           </div>

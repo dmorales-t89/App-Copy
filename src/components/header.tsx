@@ -37,7 +37,7 @@ export default function Header() {
             <Button variant="ghost" className="text-[#C2EABD] hover:bg-[#C2EABD]/10">
               Sign In
             </Button>
-            <Button className="bg-[#C2EABD] text-[#011936] hover:bg-[#C2EABD]/90">
+            <Button className="bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF]">
               Get Started
             </Button>
           </div>
