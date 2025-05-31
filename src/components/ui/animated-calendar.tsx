@@ -52,7 +52,7 @@ export function AnimatedCalendar() {
           
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-1 p-4">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
               <div key={day} className="text-[#C2EABD]/80 text-center text-sm font-medium">
                 {day}
               </div>
@@ -74,4 +74,4 @@ export function AnimatedCalendar() {
       </motion.div>
     </motion.div>
   );
-} 
+}
