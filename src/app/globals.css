@@ -26,6 +26,9 @@
   --border: rgba(1, 25, 54, 0.1);
   --input: rgba(1, 25, 54, 0.2);
   --ring: #A3D5FF;
+
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
   
   --radius: 0.625rem;
 }
@@ -55,6 +58,9 @@
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.2);
   --ring: #A3D5FF;
+
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
 }
 
 @layer base {

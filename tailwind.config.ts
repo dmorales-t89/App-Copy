@@ -13,21 +13,42 @@ const config: Config = {
         sans: ['Inter', 'sans-serif'],
       },
       colors: {
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
         primary: {
-          DEFAULT: 'rgb(87, 167, 115)',
-          hover: 'rgb(75, 145, 100)',
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
         },
-        background: {
-          DEFAULT: 'rgb(18, 22, 25)',
-          hover: 'rgb(25, 30, 35)',
+        secondary: {
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
         },
         accent: {
-          DEFAULT: 'rgb(45, 71, 57)',
-          hover: 'rgb(55, 85, 70)',
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
+        },
+        destructive: {
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
+        },
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
+        },
+        popover: {
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
         },
       },
     },
   },
   plugins: [],
 }
-export default config 
+export default config
