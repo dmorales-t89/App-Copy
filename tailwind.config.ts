@@ -63,6 +63,7 @@ const config: Config = {
     'text-[#C2EABD]/80',
     'hover:bg-[#C2EABD]/10',
     'hover:bg-[#C2EABD]/90',
+    'bg-background'
   ]
 }
 export default config
