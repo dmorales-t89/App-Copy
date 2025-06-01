@@ -8,22 +8,23 @@ import { useDropzone } from "react-dropzone";
 
 const mainVariant = {
   initial: {
-    x: 0,
-    y: 0,
+    scale: 1,
+    opacity: 1,
   },
   animate: {
-    x: 20,
-    y: -20,
-    opacity: 0.9,
+    scale: 1.05,
+    opacity: 0.95,
   },
 };
 
 const secondaryVariant = {
   initial: {
     opacity: 0,
+    scale: 0.95,
   },
   animate: {
     opacity: 1,
+    scale: 1,
   },
 };
 
@@ -60,7 +61,7 @@ export const FileUpload = ({
       <motion.div
         onClick={handleClick}
         whileHover="animate"
-        className="p-10 group/file block rounded-lg cursor-pointer w-full relative overflow-hidden bg-white/50 backdrop-blur-sm border border-[#C2EABD]"
+        className="p-10 group/file block rounded-lg cursor-pointer w-full relative overflow-hidden bg-white/50 backdrop-blur-sm border border-secondary-custom transition-colors duration-200"
       >
         <input
           ref={fileInputRef}
@@ -88,7 +89,7 @@ export const FileUpload = ({
                   layoutId={idx === 0 ? "file-upload" : "file-upload-" + idx}
                   className={cn(
                     "relative overflow-hidden z-40 bg-white flex flex-col items-start justify-start md:h-24 p-4 mt-4 w-full mx-auto rounded-md",
-                    "shadow-sm border border-[#C2EABD]"
+                    "shadow-sm border border-secondary-custom"
                   )}
                 >
                   <div className="flex justify-between w-full items-center gap-4">
@@ -104,7 +105,7 @@ export const FileUpload = ({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       layout
-                      className="rounded-lg px-2 py-1 w-fit flex-shrink-0 text-sm text-gray-700 bg-[#C2EABD]/10 shadow-input"
+                      className="rounded-lg px-2 py-1 w-fit flex-shrink-0 text-sm text-gray-700 bg-secondary-custom/10 shadow-input"
                     >
                       {(file.size / (1024 * 1024)).toFixed(2)} MB
                     </motion.p>
@@ -115,7 +116,7 @@ export const FileUpload = ({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       layout
-                      className="px-1 py-0.5 rounded-md bg-[#C2EABD]/10"
+                      className="px-1 py-0.5 rounded-md bg-secondary-custom/10"
                     >
                       {file.type}
                     </motion.p>
@@ -142,7 +143,7 @@ export const FileUpload = ({
                 }}
                 className={cn(
                   "relative group-hover/file:shadow-2xl z-40 bg-white flex items-center justify-center h-32 mt-4 w-full max-w-[8rem] mx-auto rounded-md",
-                  "shadow-[0px_10px_50px_rgba(0,0,0,0.1)] border border-[#C2EABD]"
+                  "shadow-[0px_10px_50px_rgba(0,0,0,0.1)] border border-secondary-custom transition-all duration-300"
                 )}
               >
                 {isDragActive ? (
@@ -163,7 +164,7 @@ export const FileUpload = ({
             {!files.length && (
               <motion.div
                 variants={secondaryVariant}
-                className="absolute opacity-0 border border-dashed border-[#C2EABD] inset-0 z-30 bg-transparent flex items-center justify-center h-32 mt-4 w-full max-w-[8rem] mx-auto rounded-md"
+                className="absolute opacity-0 border border-dashed border-secondary-custom inset-0 z-30 bg-transparent flex items-center justify-center h-32 mt-4 w-full max-w-[8rem] mx-auto rounded-md"
               ></motion.div>
             )}
           </div>
@@ -177,7 +178,7 @@ export function GridPattern() {
   const columns = 41;
   const rows = 11;
   return (
-    <div className="flex bg-[#C2EABD]/5 flex-shrink-0 flex-wrap justify-center items-center gap-x-px gap-y-px scale-105">
+    <div className="flex bg-secondary-custom/5 flex-shrink-0 flex-wrap justify-center items-center gap-x-px gap-y-px scale-105">
       {Array.from({ length: rows }).map((_, row) =>
         Array.from({ length: columns }).map((_, col) => {
           const index = row * columns + col;
