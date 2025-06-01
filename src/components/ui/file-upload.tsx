@@ -11,7 +11,7 @@ const mainVariant = {
     scale: 1,
     opacity: 1,
   },
-  animate: {
+  hover: {
     scale: 1.05,
     opacity: 0.95,
   },
@@ -60,7 +60,6 @@ export const FileUpload = ({
     <div className={cn("w-full", className)} {...getRootProps()}>
       <motion.div
         onClick={handleClick}
-        whileHover="animate"
         className="p-10 group/file block rounded-lg cursor-pointer w-full relative overflow-hidden bg-white/50 backdrop-blur-sm border border-secondary-custom transition-colors duration-200"
       >
         <input
@@ -135,12 +134,7 @@ export const FileUpload = ({
             {!files.length && (
               <motion.div
                 layoutId="file-upload"
-                variants={mainVariant}
-                transition={{
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 20,
-                }}
+                whileHover={mainVariant.hover}
                 className={cn(
                   "relative group-hover/file:shadow-2xl z-40 bg-white flex items-center justify-center h-32 mt-4 w-full max-w-[8rem] mx-auto rounded-md",
                   "shadow-[0px_10px_50px_rgba(0,0,0,0.1)] border border-secondary-custom transition-all duration-300"
