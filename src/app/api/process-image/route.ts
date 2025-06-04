@@ -20,9 +20,9 @@ export async function POST(request: Request) {
     const buffer = await imageFile.arrayBuffer();
     const base64Image = Buffer.from(buffer).toString('base64');
 
-    // Call Hugging Face API
+    // Call Hugging Face API with a better model for document understanding
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/naver-clova-ix/donut-base-finetuned-cord-v2",
+      "https://api-inference.huggingface.co/models/microsoft/donut-base",
       {
         method: "POST",
         headers: {
@@ -32,7 +32,8 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           inputs: base64Image,
           parameters: {
-            task: "document_parsing",
+            task: "question-answering",
+            question: "Extract the following information: event title, date, time, and description. Format as JSON.",
           },
         }),
       }
@@ -43,14 +44,25 @@ export async function POST(request: Request) {
     }
 
     const result = await response.json();
-
-    // Parse the result to extract calendar events
-    // This is a simplified example - you'll need to adjust based on actual Donut output
+    
+    // Parse the generated text to extract structured information
+    let extractedText = result[0]?.generated_text || "";
+    
+    // Use regex to find potential dates and times
+    const dateRegex = /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}(?:st|nd|rd|th)?,? \d{4}\b/gi;
+    const timeRegex = /\b(?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*(?:am|pm)\b/gi;
+    
+    const dates = extractedText.match(dateRegex) || [];
+    const times = extractedText.match(timeRegex) || [];
+    
+    // Extract title (assume it's the first line or before the first date/time)
+    const titleMatch = extractedText.split(/\n|,|\./)[0];
+    
     const events: CalendarEvent[] = [{
-      title: "Extracted Event",
-      date: new Date().toISOString(),
-      time: "12:00",
-      description: result[0]?.generated_text || "No text extracted",
+      title: titleMatch || "Untitled Event",
+      date: dates[0] || new Date().toISOString().split('T')[0],
+      time: times[0] || undefined,
+      description: extractedText.replace(titleMatch, '').trim() || undefined
     }];
 
     return NextResponse.json({ events });
