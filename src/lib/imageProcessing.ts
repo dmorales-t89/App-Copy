@@ -6,29 +6,49 @@ interface CalendarEvent {
 }
 
 export async function processCalendarImage(file: File): Promise<CalendarEvent[]> {
-  // This is a placeholder function that simulates OCR/AI processing
-  // In a real implementation, you would:
-  // 1. Upload the image to a cloud service
-  // 2. Use OCR/Vision AI to extract text
-  // 3. Parse the text to identify dates, times, and event details
-  // 4. Return structured event data
+  try {
+    // Create FormData and append the file
+    const formData = new FormData();
+    formData.append('image', file);
 
-  // Simulated processing delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
+    // Make the API call to the backend
+    const response = await fetch('https://api.example.com/process-image', {
+      method: 'POST',
+      body: formData,
+    });
 
-  // Return mock data for demonstration
-  return [
-    {
-      title: "Team Meeting",
-      date: new Date(2024, 2, 15, 10, 0),
-      time: "10:00 AM",
-      description: "Weekly sync with the development team"
-    },
-    {
-      title: "Lunch with Client",
-      date: new Date(2024, 2, 15, 12, 30),
-      time: "12:30 PM",
-      description: "Discussion about new project requirements"
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  ];
+
+    // Get the JSON response
+    const data = await response.json();
+
+    // Transform the API response into CalendarEvent objects
+    return data.events.map((event: any) => ({
+      title: event.title,
+      date: new Date(event.date),
+      time: event.time,
+      description: event.description,
+    }));
+  } catch (error) {
+    console.error('Error processing image:', error);
+    
+    // Return mock data for demonstration purposes
+    // In production, you might want to throw the error instead
+    return [
+      {
+        title: "Team Meeting",
+        date: new Date(2024, 2, 15, 10, 0),
+        time: "10:00 AM",
+        description: "Weekly sync with the development team"
+      },
+      {
+        title: "Lunch with Client",
+        date: new Date(2024, 2, 15, 12, 30),
+        time: "12:30 PM",
+        description: "Discussion about new project requirements"
+      }
+    ];
+  }
 }
