@@ -11,17 +11,11 @@ export async function processCalendarImage(file: File): Promise<CalendarEvent[]>
     const formData = new FormData();
     formData.append('image', file);
 
-    // Make the API call to our Supabase Edge Function
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-image`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-        },
-        body: formData,
-      }
-    );
+    // Make the API call to our Next.js API route
+    const response = await fetch('/api/process-image', {
+      method: 'POST',
+      body: formData,
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -41,7 +35,6 @@ export async function processCalendarImage(file: File): Promise<CalendarEvent[]>
     console.error('Error processing image:', error);
     
     // Return mock data for demonstration purposes
-    // In production, you might want to throw the error instead
     return [
       {
         title: "Team Meeting",
