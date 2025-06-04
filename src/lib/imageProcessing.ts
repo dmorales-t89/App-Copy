@@ -11,11 +11,17 @@ export async function processCalendarImage(file: File): Promise<CalendarEvent[]>
     const formData = new FormData();
     formData.append('image', file);
 
-    // Make the API call to the backend
-    const response = await fetch('https://api.example.com/process-image', {
-      method: 'POST',
-      body: formData,
-    });
+    // Make the API call to our Supabase Edge Function
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-image`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: formData,
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
