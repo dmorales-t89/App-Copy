@@ -15,9 +15,9 @@ interface OCRModelConfig {
 
 const OCR_MODELS: OCRModelConfig[] = [
   { modelId: 'microsoft/trocr-base-handwritten', name: 'TrOCR Base Handwritten Model' },
-  { modelId: 'microsoft/trocr-base-printed', name: 'TrOCR Base Printed Model' },
-  { modelId: 'Salesforce/blip-image-captioning-base', name: 'BLIP Image Captioning Model' },
-  { modelId: 'nlpconnect/vit-gpt2-image-captioning', name: 'ViT GPT2 Image Captioning Model' }
+  { modelId: 'microsoft/trocr-large-handwritten', name: 'TrOCR Large Handwritten Model' },
+  { modelId: 'microsoft/trocr-base-stage1', name: 'TrOCR Base Stage1 Model' },
+  { modelId: 'Salesforce/blip-image-captioning-large', name: 'BLIP Large Image Captioning Model' }
 ];
 
 export const dynamic = 'force-dynamic';
