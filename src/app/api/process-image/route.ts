@@ -15,22 +15,23 @@ interface OCRModelConfig {
 
 const OCR_MODELS: OCRModelConfig[] = [
   { modelId: 'microsoft/trocr-base-handwritten', name: 'TrOCR Base Handwritten Model' },
-  { modelId: 'microsoft/trocr-large-handwritten', name: 'TrOCR Large Handwritten Model' }
+  { modelId: 'microsoft/trocr-large-handwritten', name: 'TrOCR Large Handwritten Model' },
+  { modelId: 'microsoft/trocr-base-printed', name: 'TrOCR Base Printed Model' },
+  { modelId: 'microsoft/trocr-large-printed', name: 'TrOCR Large Printed Model' }
 ];
 
 export const dynamic = 'force-dynamic';
 
-async function callHuggingFaceAPI(base64Data: string, modelConfig: OCRModelConfig, apiToken: string) {
+async function callHuggingFaceAPI(imageBuffer: Buffer, contentType: string, modelConfig: OCRModelConfig, apiToken: string) {
   const response = await fetch(
     `https://api-inference.huggingface.co/models/${modelConfig.modelId}`,
     {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Content-Type': contentType,
       },
-      body: JSON.stringify({ inputs: base64Data }),
+      body: imageBuffer,
     }
   );
 
@@ -106,6 +107,22 @@ function validateBase64Image(base64Image: string): boolean {
   return base64Regex.test(base64Data);
 }
 
+function extractMimeTypeAndBuffer(base64Image: string): { contentType: string; imageBuffer: Buffer } {
+  // Extract MIME type from data URL
+  const mimeTypeMatch = base64Image.match(/^data:(image\/[^;]+);base64,/);
+  if (!mimeTypeMatch) {
+    throw new Error('Invalid data URL format');
+  }
+  
+  const contentType = mimeTypeMatch[1];
+  
+  // Extract base64 data and convert to Buffer
+  const base64Data = base64Image.split(',')[1];
+  const imageBuffer = Buffer.from(base64Data, 'base64');
+  
+  return { contentType, imageBuffer };
+}
+
 function parseDate(dateStr: string): Date | null {
   const date = new Date(dateStr);
   return isNaN(date.getTime()) ? null : date;
@@ -138,8 +155,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Remove data:image/[type];base64, prefix
-    const base64Data = base64Image.split(',')[1];
+    // Extract MIME type and convert to binary buffer
+    const { contentType, imageBuffer } = extractMimeTypeAndBuffer(base64Image);
     
     let extractedText = '';
     let currentModelIndex = 0;
@@ -151,7 +168,7 @@ export async function POST(request: Request) {
       console.log(`Attempting OCR with ${currentModel.name}...`);
 
       try {
-        const ocrResult = await callHuggingFaceAPI(base64Data, currentModel, apiToken);
+        const ocrResult = await callHuggingFaceAPI(imageBuffer, contentType, currentModel, apiToken);
         extractedText = extractTextFromOCRResponse(ocrResult);
         success = true;
       } catch (error) {
