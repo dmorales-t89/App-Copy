@@ -14,10 +14,8 @@ interface OCRModelConfig {
 }
 
 const OCR_MODELS: OCRModelConfig[] = [
-  { modelId: 'microsoft/trocr-base-handwritten', name: 'TrOCR Base Handwritten Model' },
-  { modelId: 'microsoft/trocr-large-handwritten', name: 'TrOCR Large Handwritten Model' },
-  { modelId: 'microsoft/trocr-base-stage1', name: 'TrOCR Base Stage1 Model' },
-  { modelId: 'Salesforce/blip-image-captioning-large', name: 'BLIP Large Image Captioning Model' }
+  { modelId: 'microsoft/trocr-base-handwritten', name: 'TrOCR Base Handwritten' },
+  { modelId: 'microsoft/trocr-base-printed', name: 'TrOCR Base Printed' }
 ];
 
 export const dynamic = 'force-dynamic';
@@ -35,30 +33,43 @@ async function callHuggingFaceAPI(imageBuffer: Buffer, contentType: string, mode
     }
   );
 
+  // Always parse response as text first
+  const responseText = await response.text();
+  
   if (!response.ok) {
-    const errorText = await response.text();
     console.error(`Hugging Face ${modelConfig.name} error:`, {
+      modelName: modelConfig.name,
       status: response.status,
       statusText: response.statusText,
-      error: errorText
+      responseBody: responseText
     });
-
-    if (response.status === 404) {
-      throw new Error('MODEL_NOT_FOUND');
-    }
 
     if (response.status === 503) {
       throw new Error('MODEL_LOADING');
+    }
+
+    if (response.status === 404) {
+      throw new Error('MODEL_NOT_FOUND');
     }
 
     if (response.status === 500) {
       throw new Error('INTERNAL_SERVER_ERROR');
     }
 
-    throw new Error(`${modelConfig.name} error: ${response.status} - ${errorText}`);
+    throw new Error(`${modelConfig.name} error: ${response.status} - ${responseText}`);
   }
 
-  return response.json();
+  // Try to parse as JSON
+  try {
+    return JSON.parse(responseText);
+  } catch (jsonError) {
+    console.error(`Failed to parse JSON response from ${modelConfig.name}:`, {
+      modelName: modelConfig.name,
+      responseText: responseText,
+      jsonError: jsonError instanceof Error ? jsonError.message : 'Unknown JSON parse error'
+    });
+    throw new Error(`Invalid JSON response from ${modelConfig.name}: ${responseText}`);
+  }
 }
 
 function extractTextFromOCRResponse(ocrResult: any): string {
@@ -171,6 +182,7 @@ export async function POST(request: Request) {
         const ocrResult = await callHuggingFaceAPI(imageBuffer, contentType, currentModel, apiToken);
         extractedText = extractTextFromOCRResponse(ocrResult);
         success = true;
+        console.log(`Successfully extracted text using ${currentModel.name}`);
       } catch (error) {
         if (error instanceof Error && 
             (error.message === 'MODEL_LOADING' || 
@@ -192,7 +204,8 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Extracted text:', extractedText);
+    // Log the final extracted text for debugging
+    console.log('Final extracted text:', extractedText || '(empty string)');
 
     // Process the text to identify dates and times
     const dateTimeRegex = {
