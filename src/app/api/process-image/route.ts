@@ -46,6 +46,10 @@ async function callHuggingFaceAPI(base64Data: string, modelConfig: OCRModelConfi
       throw new Error('MODEL_LOADING');
     }
 
+    if (response.status === 500) {
+      throw new Error('INTERNAL_SERVER_ERROR');
+    }
+
     throw new Error(`${modelConfig.name} error: ${response.status} - ${errorText}`);
   }
 
@@ -147,8 +151,10 @@ export async function POST(request: Request) {
         extractedText = extractTextFromOCRResponse(ocrResult);
         success = true;
       } catch (error) {
-        if (error instanceof Error && error.message === 'MODEL_LOADING' && currentModelIndex < OCR_MODELS.length - 1) {
-          console.log(`${currentModel.name} is loading, trying next model...`);
+        if (error instanceof Error && 
+            (error.message === 'MODEL_LOADING' || error.message === 'INTERNAL_SERVER_ERROR') && 
+            currentModelIndex < OCR_MODELS.length - 1) {
+          console.log(`${currentModel.name} failed (${error.message}), trying next model...`);
           currentModelIndex++;
         } else {
           throw error;
