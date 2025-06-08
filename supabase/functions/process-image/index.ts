@@ -13,6 +13,61 @@ interface CalendarEvent {
   description?: string;
 }
 
+function parseDonutOutput(text: string): CalendarEvent[] {
+  // Split the text into lines and try to extract event information
+  const lines = text.split('\n').filter(line => line.trim());
+  const events: CalendarEvent[] = [];
+  let currentEvent: Partial<CalendarEvent> = {};
+
+  for (const line of lines) {
+    const trimmedLine = line.trim().toLowerCase();
+    
+    // Try to identify different parts of the event
+    if (trimmedLine.includes('title:') || trimmedLine.includes('event:')) {
+      // If we have a previous event with at least title and date, save it
+      if (currentEvent.title && currentEvent.date) {
+        events.push(currentEvent as CalendarEvent);
+      }
+      currentEvent = {
+        title: line.split(':')[1]?.trim() || 'Untitled Event'
+      };
+    } else if (trimmedLine.includes('date:') || /\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/.test(trimmedLine)) {
+      // Look for date patterns
+      const dateMatch = line.match(/\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/);
+      if (dateMatch) {
+        currentEvent.date = new Date(dateMatch[0]).toISOString();
+      }
+    } else if (trimmedLine.includes('time:') || /\d{1,2}:\d{2}/.test(trimmedLine)) {
+      // Look for time patterns
+      const timeMatch = line.match(/\d{1,2}:\d{2}/);
+      if (timeMatch) {
+        currentEvent.time = timeMatch[0];
+      }
+    } else if (trimmedLine.includes('description:') || trimmedLine.includes('details:')) {
+      currentEvent.description = line.split(':')[1]?.trim();
+    } else if (currentEvent.title && !currentEvent.description) {
+      // If we have a title but no description, treat this line as description
+      currentEvent.description = line.trim();
+    }
+  }
+
+  // Don't forget to add the last event if it exists
+  if (currentEvent.title && currentEvent.date) {
+    events.push(currentEvent as CalendarEvent);
+  }
+
+  // If no events were parsed, create a single event with the entire text as description
+  if (events.length === 0) {
+    events.push({
+      title: "Extracted Event",
+      date: new Date().toISOString(),
+      description: text.trim()
+    });
+  }
+
+  return events;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -57,22 +112,22 @@ Deno.serve(async (req) => {
     );
 
     if (!response.ok) {
-      throw new Error(`Hugging Face API error: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Hugging Face API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
+    const extractedText = result[0]?.generated_text;
 
-    // Parse the result to extract calendar events
-    // This is a simplified example - you'll need to adjust based on actual Donut output
-    const events: CalendarEvent[] = [{
-      title: "Extracted Event",
-      date: new Date().toISOString(),
-      time: "12:00",
-      description: result[0]?.generated_text || "No text extracted",
-    }];
+    if (!extractedText) {
+      throw new Error("No text was extracted from the image");
+    }
+
+    // Parse the extracted text into calendar events
+    const events = parseDonutOutput(extractedText);
 
     return new Response(
-      JSON.stringify({ events }),
+      JSON.stringify({ events, rawText: extractedText }),
       {
         headers: {
           ...corsHeaders,
@@ -83,9 +138,19 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Error:", error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        events: [
+          {
+            title: "Demo Event 1",
+            date: new Date().toISOString(),
+            time: "10:00 AM",
+            description: "This is a demo event since image processing failed"
+          }
+        ]
+      }),
       {
-        status: 500,
+        status: error.message.includes("Hugging Face API error") ? 500 : 400,
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",

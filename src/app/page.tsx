@@ -36,11 +36,17 @@ export default function Home() {
   const handleFileUpload = async (files: File[]) => {
     if (files.length > 0) {
       setIsProcessing(true);
+      setExtractedEvents([]); // Clear previous events
+      
       try {
+        console.log('Processing image...');
         const events = await processCalendarImage(files[0]);
+        console.log('Extracted events:', events);
         setExtractedEvents(events);
       } catch (error) {
         console.error('Error processing image:', error);
+        // Show error in UI if needed
+        alert('Error processing image: ' + (error instanceof Error ? error.message : 'Unknown error'));
       } finally {
         setIsProcessing(false);
       }
