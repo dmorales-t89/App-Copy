@@ -42,6 +42,10 @@ async function callHuggingFaceAPI(base64Data: string, modelConfig: OCRModelConfi
       error: errorText
     });
 
+    if (response.status === 404) {
+      throw new Error('MODEL_NOT_FOUND');
+    }
+
     if (response.status === 503) {
       throw new Error('MODEL_LOADING');
     }
@@ -152,7 +156,9 @@ export async function POST(request: Request) {
         success = true;
       } catch (error) {
         if (error instanceof Error && 
-            (error.message === 'MODEL_LOADING' || error.message === 'INTERNAL_SERVER_ERROR') && 
+            (error.message === 'MODEL_LOADING' || 
+             error.message === 'INTERNAL_SERVER_ERROR' || 
+             error.message === 'MODEL_NOT_FOUND') && 
             currentModelIndex < OCR_MODELS.length - 1) {
           console.log(`${currentModel.name} failed (${error.message}), trying next model...`);
           currentModelIndex++;
