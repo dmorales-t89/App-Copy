@@ -14,8 +14,7 @@ interface OCRModelConfig {
 }
 
 const OCR_MODELS: OCRModelConfig[] = [
-  { modelId: 'microsoft/trocr-base-printed', name: 'Large Printed Text Model' },
-  { modelId: 'microsoft/trocr-base-handwritten', name: 'Base Handwritten Text Model' }
+  { modelId: 'microsoft/trocr-base-printed', name: 'Large Printed Text Model' }
 ];
 
 export const dynamic = 'force-dynamic';
