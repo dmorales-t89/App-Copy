@@ -4,23 +4,23 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Loader2Icon } from 'lucide-react';
 
 export default function Header() {
   const { user, loading, signOut } = useAuth();
+  const router = useRouter();
 
   const handleSignOut = async () => {
     await signOut();
   };
 
   const handleGetStarted = () => {
-    // Always redirect to signup for "Get Started"
-    window.location.href = '/signup';
+    router.push('/signup');
   };
 
   const handleSignIn = () => {
-    // Always redirect to login for "Sign In"
-    window.location.href = '/login';
+    router.push('/login');
   };
 
   return (
