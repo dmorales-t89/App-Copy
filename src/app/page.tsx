@@ -136,7 +136,7 @@ export default function Home() {
               className="text-center mb-16"
             >
               <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#011936]">
-                Why Choose PicScheduler?
+                Why Choose PicSchedule?
               </h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
                 Experience the future of calendar management with our powerful features
@@ -260,7 +260,7 @@ export default function Home() {
                 Benefits That Make a Difference
               </h2>
               <p className="text-[#011936]/80 max-w-2xl mx-auto">
-                See how PicScheduler transforms your calendar management
+                See how PicSchedule transforms your calendar management
               </p>
             </motion.div>
 
@@ -303,7 +303,7 @@ export default function Home() {
                 Frequently Asked Questions
               </h2>
               <p className="text-[#C2EABD]/80 max-w-2xl mx-auto">
-                Find answers to common questions about PicScheduler
+                Find answers to common questions about PicSchedule
               </p>
             </motion.div>
 
@@ -319,7 +319,7 @@ export default function Home() {
                 },
                 {
                   q: "Which calendar apps are supported?",
-                  a: "PicScheduler integrates with all major calendar applications including Google Calendar, Apple Calendar, Microsoft Outlook, and any calendar that supports .ics files."
+                  a: "PicSchedule integrates with all major calendar applications including Google Calendar, Apple Calendar, Microsoft Outlook, and any calendar that supports .ics files."
                 },
                 {
                   q: "Is my data secure?",
@@ -363,7 +363,7 @@ export default function Home() {
                     Ready to transform your scheduling?
                   </h3>
                   <p className="text-[#011936]/90 mb-6 max-w-2xl mx-auto">
-                    Join thousands of users who are already saving time with PicScheduler
+                    Join thousands of users who are already saving time with PicSchedule
                   </p>
                   <motion.button
                     whileHover={{ scale: 1.02 }}

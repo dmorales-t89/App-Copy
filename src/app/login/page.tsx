@@ -78,7 +78,7 @@ export default function LoginPage() {
         <Card className="p-8 bg-white/10 backdrop-blur-sm border border-[#C2EABD]/20">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-[#C2EABD] mb-2">Welcome Back</h1>
-            <p className="text-[#C2EABD]/80">Sign in to your PicScheduler account</p>
+            <p className="text-[#C2EABD]/80">Sign in to your PicSchedule account</p>
           </div>
 
           {error && (

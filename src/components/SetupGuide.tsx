@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Cross2Icon, CheckIcon, CopyIcon } from '@radix-ui/react-icons';
 
-const SETUP_GUIDE_DISMISSED_KEY = 'picscheduler-setup-guide-dismissed';
+const SETUP_GUIDE_DISMISSED_KEY = 'picschedule-setup-guide-dismissed';
 
 export function SetupGuide() {
   const [isDismissed, setIsDismissed] = useState(true);
@@ -57,7 +57,7 @@ OPENROUTER_API_KEY=your-openrouter-key-here`;
           <Card className="p-8 bg-white border border-gray-200 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">
-                🚀 Welcome to PicScheduler Setup
+                🚀 Welcome to PicSchedule Setup
               </h2>
               <Button
                 onClick={dismissGuide}

@@ -96,7 +96,7 @@ export default function SignupPage() {
         <Card className="p-8 bg-white/10 backdrop-blur-sm border border-[#C2EABD]/20">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-[#C2EABD] mb-2">Create Account</h1>
-            <p className="text-[#C2EABD]/80">Join PicScheduler and start organizing your events</p>
+            <p className="text-[#C2EABD]/80">Join PicSchedule and start organizing your events</p>
           </div>
 
           {error && (
