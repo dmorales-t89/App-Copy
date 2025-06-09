@@ -33,8 +33,8 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
       headers: {
         'Authorization': `Bearer ${apiToken}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://picscheduler.app',
-        'X-Title': 'PicScheduler',
+        'HTTP-Referer': 'https://picschedule.app',
+        'X-Title': 'PicSchedule',
       },
       body: JSON.stringify({
         model: 'opengvlab/internvl3-14b:free',
@@ -61,7 +61,6 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
     }
   );
 
-  // Always parse response as text first
   const responseText = await response.text();
   
   if (!response.ok) {
@@ -86,7 +85,6 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
     throw new Error(`OpenRouter API error: ${response.status} - ${responseText}`);
   }
 
-  // Try to parse as JSON
   try {
     const jsonResponse = JSON.parse(responseText);
     
@@ -110,8 +108,20 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
   }
 
   try {
-    // Try to parse the LLM response as JSON
-    const events = JSON.parse(llmResponse.trim());
+    // Clean the response - remove any markdown formatting or extra text
+    let cleanResponse = llmResponse.trim();
+    
+    // Remove markdown code blocks if present
+    cleanResponse = cleanResponse.replace(/```json\s*|\s*```/g, '');
+    cleanResponse = cleanResponse.replace(/```\s*|\s*```/g, '');
+    
+    // Find JSON array in the response
+    const jsonMatch = cleanResponse.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      cleanResponse = jsonMatch[0];
+    }
+
+    const events = JSON.parse(cleanResponse);
     
     if (!Array.isArray(events)) {
       throw new Error('LLM response is not an array');
@@ -131,6 +141,7 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
 
   } catch (parseError) {
     console.error('Failed to parse LLM response as JSON:', parseError);
+    console.error('Raw LLM response:', llmResponse);
     
     // Fallback: create a single event with the raw response
     return [{
@@ -233,7 +244,7 @@ export async function POST(request: Request) {
       text: llmResponse,
       events: validEvents,
       allEvents: events, // Include all events (even with invalid dates) for debugging
-      modelUsed: 'opengvlab/internvl3-14b:free'
+      modelUsed: 'opengvlab/internvl3-14b:free (OpenRouter)'
     });
   } catch (error) {
     console.error('Error processing image:', error);

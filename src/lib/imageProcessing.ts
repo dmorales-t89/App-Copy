@@ -1,5 +1,3 @@
-import { createWorker, Worker } from 'tesseract.js';
-
 interface CalendarEvent {
   title: string;
   date: Date;
@@ -22,97 +20,12 @@ interface APIResponse {
   modelUsed: string;
 }
 
-function parseScheduleText(text: string): CalendarEvent[] {
-  const events: CalendarEvent[] = [];
-  const lines = text.split('\n').filter(line => line.trim());
-  
-  // Extract the month and year
-  let currentMonth: string | null = null;
-  let currentYear: number | null = null;
-  
-  for (const line of lines) {
-    const monthYearMatch = line.match(/(\w+)\s+(\d{4})/);
-    if (monthYearMatch) {
-      currentMonth = monthYearMatch[1];
-      currentYear = parseInt(monthYearMatch[2]);
-      continue;
-    }
-  }
-
-  if (!currentMonth || !currentYear) {
-    console.error('Could not find month and year in the text');
-    return [];
-  }
-
-  let currentDay: number | null = null;
-  let currentEvent: Partial<CalendarEvent> = {};
-
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    
-    // Check for day of the week with number (e.g., "Mon 2" or just "2")
-    const dayMatch = line.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)?\s*(\d{1,2})\s*$/);
-    if (dayMatch) {
-      // Save previous event if exists
-      if (currentEvent.title && currentEvent.date) {
-        events.push(currentEvent as CalendarEvent);
-      }
-      
-      currentDay = parseInt(dayMatch[1]);
-      currentEvent = {};
-      continue;
-    }
-
-    // Check for time range pattern (e.g., "2:00 PM-7:30 PM [5.50]")
-    const timeRangeMatch = line.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)-(\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*\[[\d.]+\]/i);
-    if (timeRangeMatch && currentDay && currentMonth && currentYear) {
-      const startTime = timeRangeMatch[1];
-      const endTime = timeRangeMatch[2];
-      
-      // Create date object
-      const dateStr = `${currentMonth} ${currentDay}, ${currentYear}`;
-      const eventDate = new Date(dateStr);
-      
-      currentEvent = {
-        title: `Work Shift: ${startTime} to ${endTime}`,
-        date: eventDate,
-        time: `${startTime}-${endTime}`,
-        description: `Waves/Base/Lifeguard-Deep Water`
-      };
-      
-      events.push(currentEvent as CalendarEvent);
-      continue;
-    }
-
-    // Check for time off requests
-    if (trimmedLine.includes('[Submitted]') && currentDay && currentMonth && currentYear) {
-      const dateStr = `${currentMonth} ${currentDay}, ${currentYear}`;
-      const eventDate = new Date(dateStr);
-      
-      // Look for the request description in the next lines
-      const requestDesc = lines
-        .slice(lines.indexOf(line) + 1)
-        .find(l => l.includes('Request') || l.includes('Hours'));
-
-      currentEvent = {
-        title: 'Time Off Request',
-        date: eventDate,
-        description: requestDesc || 'Day Off Request Submitted'
-      };
-      
-      events.push(currentEvent as CalendarEvent);
-    }
-  }
-
-  return events;
-}
-
 async function uploadImageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        resolve(reader.result); // Don't remove the prefix, API expects full data URL
+        resolve(reader.result); // Keep the full data URL for API
       } else {
         reject(new Error('Failed to convert image to base64'));
       }
@@ -129,7 +42,7 @@ export async function processCalendarImage(file: File): Promise<CalendarEvent[]>
     // Convert image to base64
     const base64Image = await uploadImageToBase64(file);
     
-    // Call our secure API endpoint using the current window location
+    // Call our API endpoint using OpenRouter
     const apiUrl = `${window.location.origin}/api/process-image`;
     const response = await fetch(apiUrl, {
       method: 'POST',
