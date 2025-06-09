@@ -29,9 +29,17 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedEvents, setExtractedEvents] = useState<ExtractedEvent[]>([]);
   const uploadRef = useRef<HTMLDivElement>(null);
+  const demoSectionRef = useRef<HTMLDivElement>(null);
   const uploadRotateX = useSpring(0, springConfig);
   const uploadRotateY = useSpring(0, springConfig);
   const uploadScale = useSpring(1, springConfig);
+
+  const scrollToDemo = () => {
+    demoSectionRef.current?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
 
   const handleFileUpload = async (files: File[]) => {
     if (files.length > 0) {
@@ -91,7 +99,11 @@ export default function Home() {
                   <Button className="bg-[#C2EABD] hover:bg-[#A3D5FF] text-[#011936] px-8 py-6 text-lg font-medium">
                     Get Started
                   </Button>
-                  <Button variant="outline" className="border-[#C2EABD] text-[#C2EABD] hover:bg-[#C2EABD]/10 px-8 py-6 text-lg">
+                  <Button 
+                    variant="outline" 
+                    className="border-[#C2EABD] text-[#C2EABD] hover:bg-[#C2EABD]/10 px-8 py-6 text-lg"
+                    onClick={scrollToDemo}
+                  >
                     Try Demo
                   </Button>
                 </div>
@@ -167,7 +179,7 @@ export default function Home() {
         </section>
 
         {/* Demo Section */}
-        <section className="py-24 px-4 bg-[#011936]">
+        <section ref={demoSectionRef} className="py-24 px-4 bg-[#011936]">
           <div className="container mx-auto max-w-4xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
