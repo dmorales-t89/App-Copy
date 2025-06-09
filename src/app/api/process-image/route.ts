@@ -8,28 +8,56 @@ interface CalendarEvent {
   isValidDate: boolean;
 }
 
-interface OCRModelConfig {
-  modelId: string;
-  name: string;
-}
-
-const OCR_MODELS: OCRModelConfig[] = [
-  { modelId: 'microsoft/trocr-base-handwritten', name: 'TrOCR Base Handwritten' },
-  { modelId: 'microsoft/trocr-base-printed', name: 'TrOCR Base Printed' }
-];
-
 export const dynamic = 'force-dynamic';
 
-async function callHuggingFaceAPI(imageBuffer: Buffer, contentType: string, modelConfig: OCRModelConfig, apiToken: string) {
+const LLM_PROMPT = `Analyze this image and extract any calendar events, appointments, or scheduled activities you can find. Look for dates, times, event titles, locations, and descriptions.
+
+Return your response as a JSON array of events in this exact format:
+[
+  {
+    "title": "Event title",
+    "date": "YYYY-MM-DD",
+    "time": "HH:MM AM/PM",
+    "description": "Event description or location"
+  }
+]
+
+If you find multiple events, include them all in the array. If no events are found, return an empty array [].
+Only return valid JSON - no additional text or explanations.`;
+
+async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: string) {
   const response = await fetch(
-    `https://api-inference.huggingface.co/models/${modelConfig.modelId}`,
+    'https://openrouter.ai/api/v1/chat/completions',
     {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': contentType,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://picscheduler.app',
+        'X-Title': 'PicScheduler',
       },
-      body: imageBuffer,
+      body: JSON.stringify({
+        model: 'opengvlab/internvl3-14b:free',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: prompt
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: base64Image
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.1
+      }),
     }
   );
 
@@ -37,69 +65,81 @@ async function callHuggingFaceAPI(imageBuffer: Buffer, contentType: string, mode
   const responseText = await response.text();
   
   if (!response.ok) {
-    console.error(`Hugging Face ${modelConfig.name} error:`, {
-      modelName: modelConfig.name,
+    console.error('OpenRouter API error:', {
       status: response.status,
       statusText: response.statusText,
       responseBody: responseText
     });
 
-    if (response.status === 503) {
-      throw new Error('MODEL_LOADING');
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED - Invalid OpenRouter API key');
     }
 
     if (response.status === 404) {
-      throw new Error('MODEL_NOT_FOUND');
+      throw new Error('MODEL_NOT_FOUND - opengvlab/internvl3-14b:free model not available');
     }
 
-    if (response.status === 500) {
-      throw new Error('INTERNAL_SERVER_ERROR');
+    if (response.status === 503) {
+      throw new Error('MODEL_LOADING - Model is currently loading, please try again');
     }
 
-    throw new Error(`${modelConfig.name} error: ${response.status} - ${responseText}`);
+    throw new Error(`OpenRouter API error: ${response.status} - ${responseText}`);
   }
 
   // Try to parse as JSON
   try {
-    return JSON.parse(responseText);
+    const jsonResponse = JSON.parse(responseText);
+    
+    if (!jsonResponse.choices || !jsonResponse.choices[0] || !jsonResponse.choices[0].message) {
+      throw new Error('Invalid response format from OpenRouter API');
+    }
+
+    return jsonResponse.choices[0].message.content;
   } catch (jsonError) {
-    console.error(`Failed to parse JSON response from ${modelConfig.name}:`, {
-      modelName: modelConfig.name,
+    console.error('Failed to parse JSON response from OpenRouter:', {
       responseText: responseText,
       jsonError: jsonError instanceof Error ? jsonError.message : 'Unknown JSON parse error'
     });
-    throw new Error(`Invalid JSON response from ${modelConfig.name}: ${responseText}`);
+    throw new Error(`Invalid JSON response from OpenRouter: ${responseText}`);
   }
 }
 
-function extractTextFromOCRResponse(ocrResult: any): string {
-  if (!ocrResult) {
-    throw new Error('Empty OCR result received');
+function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
+  if (!llmResponse) {
+    throw new Error('Empty response from LLM');
   }
 
-  // Handle array response
-  if (Array.isArray(ocrResult)) {
-    const firstResult = ocrResult[0];
-    if (typeof firstResult === 'string') {
-      return firstResult;
+  try {
+    // Try to parse the LLM response as JSON
+    const events = JSON.parse(llmResponse.trim());
+    
+    if (!Array.isArray(events)) {
+      throw new Error('LLM response is not an array');
     }
-    if (firstResult?.generated_text) {
-      return firstResult.generated_text;
-    }
-    throw new Error('Invalid array response format');
-  }
 
-  // Handle object response
-  if (ocrResult.generated_text) {
-    return ocrResult.generated_text;
-  }
+    // Map and validate each event
+    return events.map((event: any) => {
+      const parsedDate = parseDate(event.date);
+      return {
+        title: event.title || 'Untitled Event',
+        date: parsedDate ? parsedDate.toISOString() : event.date,
+        time: event.time,
+        description: event.description,
+        isValidDate: parsedDate !== null
+      };
+    });
 
-  // Handle error messages in response
-  if (ocrResult.error) {
-    throw new Error(`Model error: ${ocrResult.error}`);
+  } catch (parseError) {
+    console.error('Failed to parse LLM response as JSON:', parseError);
+    
+    // Fallback: create a single event with the raw response
+    return [{
+      title: 'Extracted Information',
+      date: new Date().toISOString(),
+      description: truncateText(llmResponse),
+      isValidDate: true
+    }];
   }
-
-  throw new Error('Unexpected OCR response format');
 }
 
 function validateBase64Image(base64Image: string): boolean {
@@ -118,25 +158,35 @@ function validateBase64Image(base64Image: string): boolean {
   return base64Regex.test(base64Data);
 }
 
-function extractMimeTypeAndBuffer(base64Image: string): { contentType: string; imageBuffer: Buffer } {
-  // Extract MIME type from data URL
-  const mimeTypeMatch = base64Image.match(/^data:(image\/[^;]+);base64,/);
-  if (!mimeTypeMatch) {
-    throw new Error('Invalid data URL format');
+function parseDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  
+  // Try parsing the date string
+  const date = new Date(dateStr);
+  
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    // Try some common date formats
+    const formats = [
+      /(\d{4})-(\d{1,2})-(\d{1,2})/, // YYYY-MM-DD
+      /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // MM/DD/YYYY
+      /(\d{1,2})-(\d{1,2})-(\d{4})/, // MM-DD-YYYY
+    ];
+    
+    for (const format of formats) {
+      const match = dateStr.match(format);
+      if (match) {
+        const testDate = new Date(match[0]);
+        if (!isNaN(testDate.getTime())) {
+          return testDate;
+        }
+      }
+    }
+    
+    return null;
   }
   
-  const contentType = mimeTypeMatch[1];
-  
-  // Extract base64 data and convert to Buffer
-  const base64Data = base64Image.split(',')[1];
-  const imageBuffer = Buffer.from(base64Data, 'base64');
-  
-  return { contentType, imageBuffer };
-}
-
-function parseDate(dateStr: string): Date | null {
-  const date = new Date(dateStr);
-  return isNaN(date.getTime()) ? null : date;
+  return date;
 }
 
 function truncateText(text: string, maxLength: number = 300): string {
@@ -146,12 +196,12 @@ function truncateText(text: string, maxLength: number = 300): string {
 
 export async function POST(request: Request) {
   try {
-    const apiToken = process.env.HUGGING_FACE_API_TOKEN;
+    const apiToken = process.env.OPENROUTER_API_KEY;
     
     if (!apiToken) {
-      console.error('HUGGING_FACE_API_TOKEN is not set in environment variables');
+      console.error('OPENROUTER_API_KEY is not set in environment variables');
       return NextResponse.json(
-        { error: 'Server configuration error - API token not found' },
+        { error: 'Server configuration error - OpenRouter API key not found' },
         { status: 500 }
       );
     }
@@ -166,76 +216,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Extract MIME type and convert to binary buffer
-    const { contentType, imageBuffer } = extractMimeTypeAndBuffer(base64Image);
-    
-    let extractedText = '';
-    let currentModelIndex = 0;
-    let success = false;
+    console.log('Processing image with OpenRouter opengvlab/internvl3-14b:free model...');
 
-    // Try each model in sequence until one works
-    while (currentModelIndex < OCR_MODELS.length && !success) {
-      const currentModel = OCR_MODELS[currentModelIndex];
-      console.log(`Attempting OCR with ${currentModel.name}...`);
+    // Call OpenRouter API
+    const llmResponse = await callOpenRouterAPI(base64Image, LLM_PROMPT, apiToken);
+    console.log('LLM Response:', llmResponse);
 
-      try {
-        const ocrResult = await callHuggingFaceAPI(imageBuffer, contentType, currentModel, apiToken);
-        extractedText = extractTextFromOCRResponse(ocrResult);
-        success = true;
-        console.log(`Successfully extracted text using ${currentModel.name}`);
-      } catch (error) {
-        if (error instanceof Error && 
-            (error.message === 'MODEL_LOADING' || 
-             error.message === 'INTERNAL_SERVER_ERROR' || 
-             error.message === 'MODEL_NOT_FOUND') && 
-            currentModelIndex < OCR_MODELS.length - 1) {
-          console.log(`${currentModel.name} failed (${error.message}), trying next model...`);
-          currentModelIndex++;
-        } else {
-          throw error;
-        }
-      }
-    }
-
-    if (!success) {
-      return NextResponse.json(
-        { error: 'All OCR models failed to process the image' },
-        { status: 503 }
-      );
-    }
-
-    // Log the final extracted text for debugging
-    console.log('Final extracted text:', extractedText || '(empty string)');
-
-    // Process the text to identify dates and times
-    const dateTimeRegex = {
-      date: /(?:\d{1,2}[-/]\d{1,2}[-/]\d{2,4})|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}(?:st|nd|rd|th)?,? \d{4})|(?:\d{1,2}(?:st|nd|rd|th)? (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4})/gi,
-      time: /(?:\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)|(?:\d{1,2}\s*[AaPp][Mm])/gi
-    };
-
-    const dates = extractedText.match(dateTimeRegex.date) || [];
-    const times = extractedText.match(dateTimeRegex.time) || [];
-
-    // Create calendar events with validation
-    const events: CalendarEvent[] = dates.map((dateStr: string, index: number) => {
-      const parsedDate = parseDate(dateStr);
-      return {
-        title: `Event from image`,
-        date: parsedDate ? parsedDate.toISOString() : dateStr,
-        time: times[index] || undefined,
-        description: truncateText(extractedText),
-        isValidDate: parsedDate !== null
-      };
-    });
+    // Extract events from LLM response
+    const events = extractEventsFromLLMResponse(llmResponse);
+    console.log('Extracted events:', events);
 
     // Filter out events with no valid dates if needed
     const validEvents = events.filter(event => event.isValidDate);
 
     return NextResponse.json({
-      text: truncateText(extractedText),
+      text: llmResponse,
       events: validEvents,
       allEvents: events, // Include all events (even with invalid dates) for debugging
-      modelUsed: OCR_MODELS[currentModelIndex].name
+      modelUsed: 'opengvlab/internvl3-14b:free'
     });
   } catch (error) {
     console.error('Error processing image:', error);
