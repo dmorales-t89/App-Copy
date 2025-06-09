@@ -2,9 +2,17 @@
 
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
+import { Loader2Icon } from 'lucide-react';
 
 export default function Header() {
+  const { user, loading, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <motion.header
       initial={{ y: -100, opacity: 0 }}
@@ -34,15 +42,38 @@ export default function Header() {
 
           {/* Auth Buttons */}
           <div className="flex items-center gap-4">
-            <Button variant="ghost" className="text-[#C2EABD] hover:bg-[#C2EABD]/10">
-              Sign In
-            </Button>
-            <Button className="bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF]">
-              Get Started
-            </Button>
+            {loading ? (
+              <Loader2Icon className="w-5 h-5 animate-spin text-[#C2EABD]" />
+            ) : user ? (
+              <div className="flex items-center gap-4">
+                <span className="text-[#C2EABD]/80 text-sm">
+                  Welcome, {user.email?.split('@')[0]}
+                </span>
+                <Button 
+                  onClick={handleSignOut}
+                  variant="ghost" 
+                  className="text-[#C2EABD] hover:bg-[#C2EABD]/10"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" className="text-[#C2EABD] hover:bg-[#C2EABD]/10">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button className="bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF]">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
     </motion.header>
   );
-} 
+}
