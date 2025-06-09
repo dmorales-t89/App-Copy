@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2Icon, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { Loader2Icon, EyeIcon, EyeOffIcon, AlertCircleIcon } from 'lucide-react';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -17,7 +17,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordError, setPasswordError] = useState('');
-  const { signInWithGoogle, signUpWithEmail, user, loading, error } = useAuth();
+  const { signInWithGoogle, signUpWithEmail, user, loading, error, isConfigured } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -67,8 +67,7 @@ export default function SignupPage() {
   const handleGoogleSignup = async () => {
     setIsSubmitting(true);
     await signInWithGoogle();
-    // Note: Loading state will be managed by the auth context
-    // and redirect will happen automatically on success
+    // Loading state will be managed by auth context
   };
 
   // Show loading spinner while checking authentication
@@ -99,6 +98,18 @@ export default function SignupPage() {
             <p className="text-[#C2EABD]/80">Join PicSchedule and start organizing your events</p>
           </div>
 
+          {!isConfigured && (
+            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <div className="flex items-center gap-2">
+                <AlertCircleIcon className="w-5 h-5 text-yellow-400" />
+                <p className="text-yellow-400 text-sm font-medium">Configuration Required</p>
+              </div>
+              <p className="text-yellow-400/80 text-sm mt-1">
+                Please configure your Supabase credentials in .env.local to enable authentication.
+              </p>
+            </div>
+          )}
+
           {error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
@@ -124,6 +135,7 @@ export default function SignupPage() {
                 className="w-full px-4 py-3 bg-white/5 border border-[#C2EABD]/20 rounded-lg text-[#C2EABD] placeholder-[#C2EABD]/50 focus:outline-none focus:ring-2 focus:ring-[#C2EABD]/50 focus:border-transparent"
                 placeholder="Enter your email"
                 required
+                disabled={!isConfigured}
               />
             </div>
 
@@ -141,11 +153,13 @@ export default function SignupPage() {
                   placeholder="Create a password"
                   required
                   minLength={6}
+                  disabled={!isConfigured}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#C2EABD]/50 hover:text-[#C2EABD]"
+                  disabled={!isConfigured}
                 >
                   {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                 </button>
@@ -166,11 +180,13 @@ export default function SignupPage() {
                   className="w-full px-4 py-3 pr-12 bg-white/5 border border-[#C2EABD]/20 rounded-lg text-[#C2EABD] placeholder-[#C2EABD]/50 focus:outline-none focus:ring-2 focus:ring-[#C2EABD]/50 focus:border-transparent"
                   placeholder="Confirm your password"
                   required
+                  disabled={!isConfigured}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#C2EABD]/50 hover:text-[#C2EABD]"
+                  disabled={!isConfigured}
                 >
                   {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                 </button>
@@ -182,8 +198,8 @@ export default function SignupPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting || !email || !password || !confirmPassword || !!passwordError}
-              className="w-full bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF] py-3 font-medium"
+              disabled={isSubmitting || !email || !password || !confirmPassword || !!passwordError || !isConfigured}
+              className="w-full bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF] py-3 font-medium disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
@@ -204,9 +220,9 @@ export default function SignupPage() {
 
           <Button
             onClick={handleGoogleSignup}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isConfigured}
             variant="outline"
-            className="w-full border-[#C2EABD]/20 text-[#C2EABD] hover:bg-[#C2EABD]/10 py-3"
+            className="w-full border-[#C2EABD]/20 text-[#C2EABD] hover:bg-[#C2EABD]/10 py-3 disabled:opacity-50"
           >
             {isSubmitting ? (
               <>

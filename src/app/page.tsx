@@ -11,8 +11,6 @@ import Header from '@/components/header';
 import { processCalendarImage } from '@/lib/imageProcessing';
 import { AnimatedGridPattern } from '@/components/ui/animated-grid';
 import { AnimatedCalendar } from '@/components/ui/animated-calendar';
-import { SupabaseStatus } from '@/components/SupabaseStatus';
-import { SetupGuide } from '@/components/SetupGuide';
 
 interface ExtractedEvent {
   title: string;
@@ -77,8 +75,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#011936] relative overflow-hidden">
       <AnimatedGridPattern className="opacity-30" />
-      <SetupGuide />
-      <SupabaseStatus />
       
       <div className="relative">
         <Header />

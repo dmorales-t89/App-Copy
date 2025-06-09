@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
@@ -14,6 +14,7 @@ interface AuthContextType {
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
   error: string | null;
+  isConfigured: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,24 +24,37 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isConfigured] = useState(isSupabaseConfigured());
   const router = useRouter();
 
   useEffect(() => {
-    // Get initial session
+    if (!isConfigured || !supabase) {
+      console.warn('Supabase not configured - skipping auth initialization');
+      setLoading(false);
+      return;
+    }
+
+    // Get initial session with timeout
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session timeout')), 3000)
+        );
+
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
         
         if (error) {
           console.error('Error getting session:', error);
-          setError(error.message);
+          setError(`Authentication error: ${error.message}`);
         } else {
           setSession(session);
           setUser(session?.user ?? null);
+          console.log('Initial session loaded:', session?.user?.email || 'No user');
         }
       } catch (err) {
-        console.error('Unexpected error getting session:', err);
-        setError('Failed to initialize authentication');
+        console.error('Session initialization timeout:', err);
+        setError('Authentication service is slow to respond. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -48,29 +62,41 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
 
     getInitialSession();
 
-    // Listen for auth changes
+    // Listen for auth changes with error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('Auth state changed:', event, session?.user?.email || 'No user');
         
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         setError(null);
 
-        // Handle OAuth callback and redirect
+        // Handle successful authentication
         if (event === 'SIGNED_IN' && session) {
-          // Clear any URL parameters after OAuth callback
-          if (window.location.hash || window.location.search.includes('access_token')) {
-            window.history.replaceState({}, document.title, window.location.pathname);
+          console.log('User signed in successfully');
+          
+          // Clear URL parameters after OAuth callback
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            if (url.hash || url.searchParams.has('access_token') || url.searchParams.has('code')) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
           }
           
-          // Redirect to home page after successful authentication
-          router.push('/');
+          // Small delay to ensure state is updated before redirect
+          setTimeout(() => {
+            router.push('/');
+          }, 100);
         }
 
         if (event === 'SIGNED_OUT') {
-          router.push('/login');
+          console.log('User signed out');
+          // Don't auto-redirect on sign out to avoid loops
+        }
+
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
         }
       }
     );
@@ -78,32 +104,42 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     return () => {
       subscription.unsubscribe();
     };
-  }, [router]);
+  }, [router, isConfigured]);
 
   const signInWithGoogle = async () => {
+    if (!supabase) {
+      const error = { message: 'Authentication not configured' } as AuthError;
+      setError(error.message);
+      return { error };
+    }
+
     try {
       setError(null);
       setLoading(true);
       
+      console.log('Initiating Google sign-in...');
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account', // Changed from 'consent' to allow faster re-auth
           }
         }
       });
 
       if (error) {
-        setError(error.message);
+        console.error('Google sign-in error:', error);
+        setError(`Google sign-in failed: ${error.message}`);
         setLoading(false);
       }
 
       return { error };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      console.error('Google sign-in exception:', err);
       setError(errorMessage);
       setLoading(false);
       return { error: { message: errorMessage } as AuthError };
@@ -111,6 +147,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   };
 
   const signInWithEmail = async (email: string, password: string) => {
+    if (!supabase) {
+      const error = { message: 'Authentication not configured' } as AuthError;
+      setError(error.message);
+      return { error };
+    }
+
     try {
       setError(null);
       setLoading(true);
@@ -121,6 +163,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       });
 
       if (error) {
+        console.error('Email sign-in error:', error);
         setError(error.message);
       }
 
@@ -135,6 +178,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
+    if (!supabase) {
+      const error = { message: 'Authentication not configured' } as AuthError;
+      setError(error.message);
+      return { error };
+    }
+
     try {
       setError(null);
       setLoading(true);
@@ -143,11 +192,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
         }
       });
 
       if (error) {
+        console.error('Email sign-up error:', error);
         setError(error.message);
       }
 
@@ -162,11 +212,18 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   };
 
   const signOut = async () => {
+    if (!supabase) {
+      const error = { message: 'Authentication not configured' } as AuthError;
+      setError(error.message);
+      return { error };
+    }
+
     try {
       setError(null);
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error('Sign-out error:', error);
         setError(error.message);
       }
 
@@ -187,6 +244,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     signUpWithEmail,
     signOut,
     error,
+    isConfigured,
   };
 
   return (
