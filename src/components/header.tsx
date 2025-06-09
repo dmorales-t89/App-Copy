@@ -13,6 +13,16 @@ export default function Header() {
     await signOut();
   };
 
+  const handleGetStarted = () => {
+    // Always redirect to signup for "Get Started"
+    window.location.href = '/signup';
+  };
+
+  const handleSignIn = () => {
+    // Always redirect to login for "Sign In"
+    window.location.href = '/login';
+  };
+
   return (
     <motion.header
       initial={{ y: -100, opacity: 0 }}
@@ -59,16 +69,19 @@ export default function Header() {
               </div>
             ) : (
               <>
-                <Link href="/login">
-                  <Button variant="ghost" className="text-[#C2EABD] hover:bg-[#C2EABD]/10">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button className="bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF]">
-                    Get Started
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={handleSignIn}
+                  variant="ghost" 
+                  className="text-[#C2EABD] hover:bg-[#C2EABD]/10"
+                >
+                  Sign In
+                </Button>
+                <Button 
+                  onClick={handleGetStarted}
+                  className="bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF]"
+                >
+                  Get Started
+                </Button>
               </>
             )}
           </div>

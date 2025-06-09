@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2Icon, EyeIcon, EyeOffIcon } from 'lucide-react';
 
@@ -19,6 +19,15 @@ export default function SignupPage() {
   const [passwordError, setPasswordError] = useState('');
   const { signInWithGoogle, signUpWithEmail, user, loading, error } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Pre-fill email from URL params if coming from login redirect
+  useEffect(() => {
+    const emailParam = searchParams?.get('email');
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+  }, [searchParams]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -93,6 +102,12 @@ export default function SignupPage() {
           {error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {searchParams?.get('message') && (
+            <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-blue-400 text-sm">{searchParams.get('message')}</p>
             </div>
           )}
 

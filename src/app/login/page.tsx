@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2Icon, EyeIcon, EyeOffIcon } from 'lucide-react';
 
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signInWithGoogle, signInWithEmail, user, loading, error } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -31,7 +32,15 @@ export default function LoginPage() {
     setIsSubmitting(true);
     const { error } = await signInWithEmail(email, password);
     
-    if (!error) {
+    if (error) {
+      // If user doesn't exist, redirect to signup
+      if (error.message.includes('Invalid login credentials') || 
+          error.message.includes('Email not confirmed') ||
+          error.message.includes('User not found')) {
+        router.push(`/signup?email=${encodeURIComponent(email)}&message=Account not found. Please create an account.`);
+        return;
+      }
+    } else {
       router.push('/');
     }
     setIsSubmitting(false);
@@ -75,6 +84,12 @@ export default function LoginPage() {
           {error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {searchParams?.get('message') && (
+            <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-blue-400 text-sm">{searchParams.get('message')}</p>
             </div>
           )}
 
