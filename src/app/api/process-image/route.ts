@@ -26,6 +26,9 @@ If you find multiple events, include them all in the array. If no events are fou
 Only return valid JSON - no additional text or explanations.`;
 
 async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: string) {
+  console.log('API Token length:', apiToken ? apiToken.length : 0);
+  console.log('API Token starts with:', apiToken ? apiToken.substring(0, 10) + '...' : 'undefined');
+  
   const response = await fetch(
     'https://openrouter.ai/api/v1/chat/completions',
     {
@@ -71,7 +74,7 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
     });
 
     if (response.status === 401) {
-      throw new Error('UNAUTHORIZED - Invalid OpenRouter API key');
+      throw new Error('UNAUTHORIZED - Invalid OpenRouter API key. Please check your API key is valid and has sufficient credits.');
     }
 
     if (response.status === 404) {
@@ -209,10 +212,29 @@ export async function POST(request: Request) {
   try {
     const apiToken = process.env.OPENROUTER_API_KEY;
     
+    console.log('Environment check:');
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+    console.log('- API key exists:', !!apiToken);
+    console.log('- API key length:', apiToken ? apiToken.length : 0);
+    
     if (!apiToken) {
       console.error('OPENROUTER_API_KEY is not set in environment variables');
       return NextResponse.json(
-        { error: 'Server configuration error - OpenRouter API key not found' },
+        { 
+          error: 'Server configuration error - OpenRouter API key not found',
+          details: 'Please ensure OPENROUTER_API_KEY is set in your .env.local file'
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!apiToken.startsWith('sk-or-v1-')) {
+      console.error('Invalid API key format - should start with sk-or-v1-');
+      return NextResponse.json(
+        { 
+          error: 'Invalid API key format',
+          details: 'OpenRouter API key should start with sk-or-v1-'
+        },
         { status: 500 }
       );
     }
