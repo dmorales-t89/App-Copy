@@ -92,7 +92,6 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
 
         if (event === 'SIGNED_OUT') {
           console.log('User signed out');
-          // Don't auto-redirect on sign out to avoid loops
         }
 
         if (event === 'TOKEN_REFRESHED') {
@@ -119,13 +118,16 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       
       console.log('Initiating Google sign-in...');
       
+      // Get the current origin for redirect
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+          redirectTo,
           queryParams: {
             access_type: 'offline',
-            prompt: 'select_account', // Changed from 'consent' to allow faster re-auth
+            prompt: 'select_account',
           }
         }
       });
@@ -192,7 +194,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         email,
         password,
         options: {
-          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
         }
       });
 

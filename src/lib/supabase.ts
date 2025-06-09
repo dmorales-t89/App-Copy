@@ -34,12 +34,10 @@ if (supabaseUrl && supabaseAnonKey &&
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
-        // Reduce timeout for faster error detection
         storageKey: 'picschedule-auth',
-        // Optimize for faster redirects
-        redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+        // Set proper redirect URL for OAuth
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined
       },
-      // Add timeout for faster error detection
       global: {
         headers: {
           'X-Client-Info': 'picschedule-web'
@@ -48,6 +46,7 @@ if (supabaseUrl && supabaseAnonKey &&
     });
     
     console.log('✅ Supabase client initialized successfully');
+    console.log('🔗 Supabase URL:', supabaseUrl);
   } catch (error) {
     console.error('❌ Invalid Supabase URL format:', supabaseUrl);
     console.error('Please check your NEXT_PUBLIC_SUPABASE_URL in .env.local');
