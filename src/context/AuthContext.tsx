@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session, AuthError } from '@supabase/supabase-js';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { debounce } from 'lodash';
 
 interface AuthContextType {
   user: User | null;
@@ -27,10 +28,18 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const [isConfigured] = useState(isSupabaseConfigured());
   const router = useRouter();
 
+  // Add debounce for state updates
+  const debouncedSetLoading = useCallback(
+    debounce((value: boolean) => {
+      setLoading(value);
+    }, 100),
+    []
+  );
+
   useEffect(() => {
     if (!isConfigured || !supabase) {
       console.warn('Supabase not configured - skipping auth initialization');
-      setLoading(false);
+      debouncedSetLoading(false);
       return;
     }
 
@@ -38,7 +47,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     const getInitialSession = async () => {
       try {
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout')), 3000)
+          setTimeout(() => reject(new Error('Session timeout')), 5000)
         );
 
         const sessionPromise = supabase.auth.getSession();
@@ -50,13 +59,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         } else {
           setSession(session);
           setUser(session?.user ?? null);
-          console.log('Initial session loaded:', session?.user?.email || 'No user');
         }
       } catch (err) {
-        console.error('Session initialization timeout:', err);
+        console.error('Session initialization error:', err);
         setError('Authentication service is slow to respond. Please try again.');
       } finally {
-        setLoading(false);
+        debouncedSetLoading(false);
       }
     };
 
@@ -64,18 +72,14 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
 
     // Listen for auth changes with error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email || 'No user');
-        
+      async (event: AuthChangeEvent, session: Session | null) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        debouncedSetLoading(false);
         setError(null);
 
         // Handle successful authentication
         if (event === 'SIGNED_IN' && session) {
-          console.log('User signed in successfully');
-          
           // Clear URL parameters after OAuth callback
           if (typeof window !== 'undefined') {
             const url = new URL(window.location.href);
@@ -86,16 +90,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
           
           // Small delay to ensure state is updated before redirect
           setTimeout(() => {
-            router.push('/');
-          }, 100);
+            router.replace('/calendar');
+          }, 50);
         }
 
         if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
-        }
-
-        if (event === 'TOKEN_REFRESHED') {
-          console.log('Token refreshed successfully');
+          router.replace('/login');
         }
       }
     );
@@ -103,80 +103,62 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, isConfigured]);
+  }, [router, isConfigured, debouncedSetLoading]);
 
-  const signInWithGoogle = async () => {
-    if (!supabase) {
-      const error = { message: 'Authentication not configured' } as AuthError;
-      setError(error.message);
-      return { error };
-    }
-
-    try {
-      setError(null);
-      setLoading(true);
-      
-      console.log('Initiating Google sign-in...');
-      
-      // Get the current origin for redirect
-      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account',
+  // Add debounce for sign-in operations
+  const debouncedSignIn = useCallback(
+    (provider: 'google' | 'email', options?: any): Promise<{ error: AuthError | null }> => {
+      return new Promise((resolve) => {
+        const debouncedFn = debounce(async () => {
+          if (!supabase) {
+            const error = { message: 'Authentication not configured' } as AuthError;
+            setError(error.message);
+            resolve({ error });
+            return;
           }
-        }
+
+          try {
+            setError(null);
+            debouncedSetLoading(true);
+
+            if (provider === 'google') {
+              const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
+              const result = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                  redirectTo,
+                  queryParams: {
+                    access_type: 'offline',
+                    prompt: 'select_account',
+                  }
+                }
+              });
+              resolve({ error: result.error });
+            } else {
+              const result = await supabase.auth.signInWithPassword(options);
+              resolve({ error: result.error });
+            }
+          } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+            setError(errorMessage);
+            resolve({ error: { message: errorMessage } as AuthError });
+          } finally {
+            debouncedSetLoading(false);
+          }
+        }, 100);
+
+        debouncedFn();
       });
+    },
+    [debouncedSetLoading]
+  );
 
-      if (error) {
-        console.error('Google sign-in error:', error);
-        setError(`Google sign-in failed: ${error.message}`);
-        setLoading(false);
-      }
-
-      return { error };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      console.error('Google sign-in exception:', err);
-      setError(errorMessage);
-      setLoading(false);
-      return { error: { message: errorMessage } as AuthError };
-    }
+  const signInWithGoogle = async (): Promise<{ error: AuthError | null }> => {
+    return debouncedSignIn('google');
   };
-
-  const signInWithEmail = async (email: string, password: string) => {
-    if (!supabase) {
-      const error = { message: 'Authentication not configured' } as AuthError;
-      setError(error.message);
-      return { error };
-    }
-
-    try {
-      setError(null);
-      setLoading(true);
-
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Email sign-in error:', error);
-        setError(error.message);
-      }
-
-      setLoading(false);
-      return { error };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(errorMessage);
-      setLoading(false);
-      return { error: { message: errorMessage } as AuthError };
-    }
+  
+  const signInWithEmail = async (email: string, password: string): Promise<{ error: AuthError | null }> => {
+    return debouncedSignIn('email', { email, password });
   };
 
   const signUpWithEmail = async (email: string, password: string) => {

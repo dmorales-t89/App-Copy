@@ -6,21 +6,32 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2Icon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function Header() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Prefetch routes for faster navigation
+  useEffect(() => {
+    router.prefetch('/signup');
+    router.prefetch('/login');
+  }, [router]);
 
   const handleSignOut = async () => {
     await signOut();
+    router.replace('/');
   };
 
   const handleGetStarted = () => {
-    router.push('/signup');
+    setIsNavigating(true);
+    router.replace('/signup');
   };
 
   const handleSignIn = () => {
-    router.push('/login');
+    setIsNavigating(true);
+    router.replace('/login');
   };
 
   return (
@@ -39,20 +50,33 @@ export default function Header() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="#features" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
-              Features
-            </Link>
-            <Link href="#pricing" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
-              Pricing
-            </Link>
-            <Link href="#about" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
-              About
-            </Link>
+            {user ? (
+              <>
+                <Link href="/calendar" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
+                  Calendar
+                </Link>
+                <Link href="/try" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
+                  Try It
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="#features" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
+                  Features
+                </Link>
+                <Link href="#pricing" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
+                  Pricing
+                </Link>
+                <Link href="#about" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
+                  About
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* Auth Buttons */}
           <div className="flex items-center gap-4">
-            {loading ? (
+            {loading || isNavigating ? (
               <Loader2Icon className="w-5 h-5 animate-spin text-[#C2EABD]" />
             ) : user ? (
               <div className="flex items-center gap-4">
@@ -73,14 +97,23 @@ export default function Header() {
                   onClick={handleSignIn}
                   variant="ghost" 
                   className="text-[#C2EABD] hover:bg-[#C2EABD]/10"
+                  disabled={isNavigating}
                 >
-                  Sign In
+                  {isNavigating ? (
+                    <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
+                  ) : 'Sign In'}
                 </Button>
                 <Button 
                   onClick={handleGetStarted}
                   className="bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF]"
+                  disabled={isNavigating}
                 >
-                  Get Started
+                  {isNavigating ? (
+                    <>
+                      <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
+                      Loading...
+                    </>
+                  ) : 'Get Started'}
                 </Button>
               </>
             )}

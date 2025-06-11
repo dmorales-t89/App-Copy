@@ -35,13 +35,24 @@ if (supabaseUrl && supabaseAnonKey &&
         detectSessionInUrl: true,
         flowType: 'pkce',
         storageKey: 'picschedule-auth',
-        // Set proper redirect URL for OAuth
         redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined
       },
       global: {
         headers: {
           'X-Client-Info': 'picschedule-web'
         }
+      },
+      realtime: {
+        timeout: 10000,
+        params: {
+          eventsPerSecond: 10
+        }
+      },
+      db: {
+        schema: 'public'
+      },
+      opts: {
+        timeout: 10000
       }
     });
     

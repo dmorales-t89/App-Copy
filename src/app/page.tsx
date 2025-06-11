@@ -6,11 +6,13 @@ import { Card } from '@/components/ui/card';
 import { FileUpload } from '@/components/ui/file-upload';
 import { ImageIcon, CalendarIcon, ClockIcon, CheckCircledIcon } from '@radix-ui/react-icons';
 import { Loader2Icon } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Header from '@/components/header';
 import { processCalendarImage } from '@/lib/imageProcessing';
 import { AnimatedGridPattern } from '@/components/ui/animated-grid';
 import { AnimatedCalendar } from '@/components/ui/animated-calendar';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 interface ExtractedEvent {
   title: string;
@@ -26,6 +28,8 @@ const springConfig: SpringOptions = {
 };
 
 export default function Home() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedEvents, setExtractedEvents] = useState<ExtractedEvent[]>([]);
   const uploadRef = useRef<HTMLDivElement>(null);
@@ -33,6 +37,16 @@ export default function Home() {
   const uploadRotateX = useSpring(0, springConfig);
   const uploadRotateY = useSpring(0, springConfig);
   const uploadScale = useSpring(1, springConfig);
+
+  useEffect(() => {
+    if (user) {
+      router.push('/calendar');
+    }
+  }, [user, router]);
+
+  if (user) {
+    return null;
+  }
 
   const scrollToDemo = () => {
     demoSectionRef.current?.scrollIntoView({ 
