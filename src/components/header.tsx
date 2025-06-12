@@ -26,12 +26,12 @@ export default function Header() {
 
   const handleGetStarted = () => {
     setIsNavigating(true);
-    router.replace('/signup');
+    router.push('/signup');
   };
 
   const handleSignIn = () => {
     setIsNavigating(true);
-    router.replace('/login');
+    router.push('/login');
   };
 
   return (

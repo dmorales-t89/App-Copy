@@ -15,7 +15,6 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const { signInWithGoogle, signUpWithEmail, user, loading, error, isConfigured } = useAuth();
   const router = useRouter();
@@ -54,18 +53,15 @@ export default function SignupPage() {
       return;
     }
 
-    setIsSubmitting(true);
     const { error } = await signUpWithEmail(email, password);
     
     if (!error) {
       // Show success message or redirect
       router.push('/login?message=Check your email to confirm your account');
     }
-    setIsSubmitting(false);
   };
 
   const handleGoogleSignup = async () => {
-    setIsSubmitting(true);
     await signInWithGoogle();
     // Loading state will be managed by auth context
   };
@@ -135,7 +131,7 @@ export default function SignupPage() {
                 className="w-full px-4 py-3 bg-white/5 border border-[#C2EABD]/20 rounded-lg text-[#C2EABD] placeholder-[#C2EABD]/50 focus:outline-none focus:ring-2 focus:ring-[#C2EABD]/50 focus:border-transparent"
                 placeholder="Enter your email"
                 required
-                disabled={!isConfigured}
+                disabled={!isConfigured || loading}
               />
             </div>
 
@@ -153,13 +149,13 @@ export default function SignupPage() {
                   placeholder="Create a password"
                   required
                   minLength={6}
-                  disabled={!isConfigured}
+                  disabled={!isConfigured || loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#C2EABD]/50 hover:text-[#C2EABD]"
-                  disabled={!isConfigured}
+                  disabled={!isConfigured || loading}
                 >
                   {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                 </button>
@@ -180,13 +176,13 @@ export default function SignupPage() {
                   className="w-full px-4 py-3 pr-12 bg-white/5 border border-[#C2EABD]/20 rounded-lg text-[#C2EABD] placeholder-[#C2EABD]/50 focus:outline-none focus:ring-2 focus:ring-[#C2EABD]/50 focus:border-transparent"
                   placeholder="Confirm your password"
                   required
-                  disabled={!isConfigured}
+                  disabled={!isConfigured || loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#C2EABD]/50 hover:text-[#C2EABD]"
-                  disabled={!isConfigured}
+                  disabled={!isConfigured || loading}
                 >
                   {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                 </button>
@@ -198,10 +194,10 @@ export default function SignupPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting || !email || !password || !confirmPassword || !!passwordError || !isConfigured}
+              disabled={loading || !email || !password || !confirmPassword || !!passwordError || !isConfigured}
               className="w-full bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF] py-3 font-medium disabled:opacity-50"
             >
-              {isSubmitting ? (
+              {loading ? (
                 <>
                   <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
                   Creating account...
@@ -220,11 +216,11 @@ export default function SignupPage() {
 
           <Button
             onClick={handleGoogleSignup}
-            disabled={isSubmitting || !isConfigured}
+            disabled={loading || !isConfigured}
             variant="outline"
             className="w-full border-[#C2EABD]/20 text-[#C2EABD] hover:bg-[#C2EABD]/10 py-3 disabled:opacity-50"
           >
-            {isSubmitting ? (
+            {loading ? (
               <>
                 <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
                 Connecting...

@@ -32,6 +32,7 @@ export default function Home() {
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedEvents, setExtractedEvents] = useState<ExtractedEvent[]>([]);
+  const [isNavigating, setIsNavigating] = useState(false);
   const uploadRef = useRef<HTMLDivElement>(null);
   const demoSectionRef = useRef<HTMLDivElement>(null);
   const uploadRotateX = useSpring(0, springConfig);
@@ -53,6 +54,11 @@ export default function Home() {
       behavior: 'smooth',
       block: 'start'
     });
+  };
+
+  const handleGetStarted = () => {
+    setIsNavigating(true);
+    router.push('/signup');
   };
 
   const handleFileUpload = async (files: File[]) => {
@@ -111,8 +117,19 @@ export default function Home() {
                   Let AI handle the scheduling while you focus on what matters.
                 </p>
                 <div className="flex gap-4 justify-center md:justify-start">
-                  <Button className="bg-[#C2EABD] hover:bg-[#A3D5FF] text-[#011936] px-8 py-6 text-lg font-medium">
-                    Get Started
+                  <Button 
+                    onClick={handleGetStarted}
+                    disabled={isNavigating}
+                    className="bg-[#C2EABD] hover:bg-[#A3D5FF] text-[#011936] px-8 py-6 text-lg font-medium disabled:opacity-50"
+                  >
+                    {isNavigating ? (
+                      <>
+                        <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Get Started'
+                    )}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -376,11 +393,20 @@ export default function Home() {
                     Join thousands of users who are already saving time with PicSchedule
                   </p>
                   <motion.button
+                    onClick={handleGetStarted}
+                    disabled={isNavigating}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="bg-[#011936] text-[#C2EABD] px-8 py-3 rounded-lg font-medium hover:bg-[#011936]/90 transition-colors"
+                    className="bg-[#011936] text-[#C2EABD] px-8 py-3 rounded-lg font-medium hover:bg-[#011936]/90 transition-colors disabled:opacity-50"
                   >
-                    Get Started for Free
+                    {isNavigating ? (
+                      <>
+                        <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Get Started for Free'
+                    )}
                   </motion.button>
                 </div>
               </div>

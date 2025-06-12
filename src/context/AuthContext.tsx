@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { debounce } from 'lodash';
 
 interface AuthContextType {
   user: User | null;
@@ -28,18 +27,10 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const [isConfigured] = useState(isSupabaseConfigured());
   const router = useRouter();
 
-  // Add debounce for state updates
-  const debouncedSetLoading = useCallback(
-    debounce((value: boolean) => {
-      setLoading(value);
-    }, 100),
-    []
-  );
-
   useEffect(() => {
     if (!isConfigured || !supabase) {
       console.warn('Supabase not configured - skipping auth initialization');
-      debouncedSetLoading(false);
+      setLoading(false);
       return;
     }
 
@@ -64,7 +55,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         console.error('Session initialization error:', err);
         setError('Authentication service is slow to respond. Please try again.');
       } finally {
-        debouncedSetLoading(false);
+        setLoading(false);
       }
     };
 
@@ -75,7 +66,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       async (event: AuthChangeEvent, session: Session | null) => {
         setSession(session);
         setUser(session?.user ?? null);
-        debouncedSetLoading(false);
+        setLoading(false);
         setError(null);
 
         // Handle successful authentication
@@ -103,63 +94,62 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, isConfigured, debouncedSetLoading]);
+  }, [router, isConfigured]);
 
-  // Add debounce for sign-in operations
-  const debouncedSignIn = useCallback(
-    (provider: 'google' | 'email', options?: any): Promise<{ error: AuthError | null }> => {
-      return new Promise((resolve) => {
-        const debouncedFn = debounce(async () => {
-          if (!supabase) {
-            const error = { message: 'Authentication not configured' } as AuthError;
-            setError(error.message);
-            resolve({ error });
-            return;
+  const signInWithGoogle = useCallback(async (): Promise<{ error: AuthError | null }> => {
+    if (!supabase) {
+      const error = { message: 'Authentication not configured' } as AuthError;
+      setError(error.message);
+      return { error };
+    }
+
+    try {
+      setError(null);
+      setLoading(true);
+
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
+      const result = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
           }
-
-          try {
-            setError(null);
-            debouncedSetLoading(true);
-
-            if (provider === 'google') {
-              const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
-              const result = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                  redirectTo,
-                  queryParams: {
-                    access_type: 'offline',
-                    prompt: 'select_account',
-                  }
-                }
-              });
-              resolve({ error: result.error });
-            } else {
-              const result = await supabase.auth.signInWithPassword(options);
-              resolve({ error: result.error });
-            }
-          } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-            setError(errorMessage);
-            resolve({ error: { message: errorMessage } as AuthError });
-          } finally {
-            debouncedSetLoading(false);
-          }
-        }, 100);
-
-        debouncedFn();
+        }
       });
-    },
-    [debouncedSetLoading]
-  );
-
-  const signInWithGoogle = async (): Promise<{ error: AuthError | null }> => {
-    return debouncedSignIn('google');
-  };
+      
+      return { error: result.error };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(errorMessage);
+      return { error: { message: errorMessage } as AuthError };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
   
-  const signInWithEmail = async (email: string, password: string): Promise<{ error: AuthError | null }> => {
-    return debouncedSignIn('email', { email, password });
-  };
+  const signInWithEmail = useCallback(async (email: string, password: string): Promise<{ error: AuthError | null }> => {
+    if (!supabase) {
+      const error = { message: 'Authentication not configured' } as AuthError;
+      setError(error.message);
+      return { error };
+    }
+
+    try {
+      setError(null);
+      setLoading(true);
+
+      const result = await supabase.auth.signInWithPassword({ email, password });
+      return { error: result.error };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(errorMessage);
+      return { error: { message: errorMessage } as AuthError };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const signUpWithEmail = async (email: string, password: string) => {
     if (!supabase) {
@@ -185,13 +175,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         setError(error.message);
       }
 
-      setLoading(false);
       return { error };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
-      setLoading(false);
       return { error: { message: errorMessage } as AuthError };
+    } finally {
+      setLoading(false);
     }
   };
 

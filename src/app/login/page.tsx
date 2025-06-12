@@ -13,7 +13,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { signInWithGoogle, signInWithEmail, user, loading, error, isConfigured } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,7 +28,6 @@ export default function LoginPage() {
     e.preventDefault();
     if (!email || !password) return;
 
-    setIsSubmitting(true);
     const { error } = await signInWithEmail(email, password);
     
     if (error) {
@@ -43,11 +41,9 @@ export default function LoginPage() {
     } else {
       router.push('/');
     }
-    setIsSubmitting(false);
   };
 
   const handleGoogleLogin = async () => {
-    setIsSubmitting(true);
     await signInWithGoogle();
     // Loading state will be managed by auth context
   };
@@ -117,7 +113,7 @@ export default function LoginPage() {
                 className="w-full px-4 py-3 bg-white/5 border border-[#C2EABD]/20 rounded-lg text-[#C2EABD] placeholder-[#C2EABD]/50 focus:outline-none focus:ring-2 focus:ring-[#C2EABD]/50 focus:border-transparent"
                 placeholder="Enter your email"
                 required
-                disabled={!isConfigured}
+                disabled={!isConfigured || loading}
               />
             </div>
 
@@ -134,13 +130,13 @@ export default function LoginPage() {
                   className="w-full px-4 py-3 pr-12 bg-white/5 border border-[#C2EABD]/20 rounded-lg text-[#C2EABD] placeholder-[#C2EABD]/50 focus:outline-none focus:ring-2 focus:ring-[#C2EABD]/50 focus:border-transparent"
                   placeholder="Enter your password"
                   required
-                  disabled={!isConfigured}
+                  disabled={!isConfigured || loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#C2EABD]/50 hover:text-[#C2EABD]"
-                  disabled={!isConfigured}
+                  disabled={!isConfigured || loading}
                 >
                   {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                 </button>
@@ -149,10 +145,10 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting || !email || !password || !isConfigured}
+              disabled={loading || !email || !password || !isConfigured}
               className="w-full bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF] py-3 font-medium disabled:opacity-50"
             >
-              {isSubmitting ? (
+              {loading ? (
                 <>
                   <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
                   Signing in...
@@ -171,11 +167,11 @@ export default function LoginPage() {
 
           <Button
             onClick={handleGoogleLogin}
-            disabled={isSubmitting || !isConfigured}
+            disabled={loading || !isConfigured}
             variant="outline"
             className="w-full border-[#C2EABD]/20 text-[#C2EABD] hover:bg-[#C2EABD]/10 py-3 disabled:opacity-50"
           >
-            {isSubmitting ? (
+            {loading ? (
               <>
                 <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
                 Connecting...
