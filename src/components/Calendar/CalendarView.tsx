@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -7,14 +7,16 @@ interface CalendarViewProps {
   currentDate: Date;
   events: Event[];
   onAddEvent: (date: Date) => void;
-  visibleGroups: string[];
+  onEventClick: (event: Event) => void;
   groups: Array<{ id: string; name: string; color: string }>;
 }
 
-export function CalendarView({ currentDate, events, onAddEvent, visibleGroups, groups }: CalendarViewProps) {
+export function CalendarView({ currentDate, events, onAddEvent, onEventClick, groups }: CalendarViewProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const calendarStart = startOfWeek(monthStart);
+  const calendarEnd = endOfWeek(monthEnd);
+  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   const getDayEvents = (date: Date) => {
     return events.filter(event => {
@@ -23,60 +25,86 @@ export function CalendarView({ currentDate, events, onAddEvent, visibleGroups, g
     });
   };
 
+  const getEventColor = (event: Event) => {
+    return event.color || groups.find(g => g.id === event.groupId)?.color || '#3B82F6';
+  };
+
   return (
-    <div className="h-full grid grid-cols-7 grid-rows-[auto_1fr] gap-px bg-[#C2EABD]/20">
+    <div className="h-full flex flex-col">
       {/* Week day headers */}
-      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-        <div
-          key={day}
-          className="p-2 text-center text-sm font-medium text-[#011936] bg-white"
-        >
-          {day}
-        </div>
-      ))}
-
-      {/* Calendar days */}
-      {days.map((day, dayIdx) => {
-        const dayEvents = getDayEvents(day);
-        const isCurrentMonth = isSameMonth(day, currentDate);
-
-        return (
+      <div className="grid grid-cols-7 border-b border-[#C2EABD]/20">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div
-            key={day.toString()}
-            className={cn(
-              "min-h-[120px] p-2 bg-white border-t border-[#C2EABD]/20",
-              !isCurrentMonth && "opacity-50"
-            )}
-            onClick={() => onAddEvent(day)}
+            key={day}
+            className="p-3 text-center text-sm font-medium text-[#011936] bg-gray-50"
           >
-            <div className="flex items-center justify-between">
-              <span
-                className={cn(
-                  "text-sm font-medium",
-                  isCurrentMonth ? "text-[#011936]" : "text-[#011936]/50"
-                )}
-              >
-                {format(day, 'd')}
-              </span>
-            </div>
-
-            <div className="mt-2 space-y-1">
-              {dayEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className={cn(
-                    "text-xs p-1 rounded truncate",
-                    `bg-${event.color}-100 text-${event.color}-900`
-                  )}
-                  title={event.title}
-                >
-                  {event.title}
-                </div>
-              ))}
-            </div>
+            {day}
           </div>
-        );
-      })}
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="flex-1 grid grid-cols-7 grid-rows-6">
+        {days.map((day, dayIdx) => {
+          const dayEvents = getDayEvents(day);
+          const isCurrentMonth = isSameMonth(day, currentDate);
+          const isToday = isSameDay(day, new Date());
+
+          return (
+            <div
+              key={day.toString()}
+              className={cn(
+                "border-r border-b border-[#C2EABD]/20 p-2 cursor-pointer hover:bg-gray-50 transition-colors",
+                !isCurrentMonth && "bg-gray-50/50",
+                "h-full min-h-[120px] flex flex-col"
+              )}
+              onClick={() => onAddEvent(day)}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span
+                  className={cn(
+                    "text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full",
+                    isCurrentMonth ? "text-[#011936]" : "text-[#011936]/50",
+                    isToday && "bg-[#C2EABD] text-[#011936] font-bold"
+                  )}
+                >
+                  {format(day, 'd')}
+                </span>
+              </div>
+
+              <div className="flex-1 space-y-1 overflow-hidden">
+                {dayEvents.slice(0, 3).map((event) => (
+                  <div
+                    key={event.id}
+                    className="text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ 
+                      backgroundColor: getEventColor(event), 
+                      color: '#ffffff'
+                    }}
+                    title={`${event.title}${event.startTime ? ` at ${event.startTime}` : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEventClick(event);
+                    }}
+                  >
+                    {event.startTime && (
+                      <span className="font-medium mr-1">
+                        {format(new Date(`2000-01-01T${event.startTime}`), 'h:mm a')}
+                      </span>
+                    )}
+                    {event.title}
+                  </div>
+                ))}
+                {dayEvents.length > 3 && (
+                  <div className="text-xs text-[#011936]/70 font-medium">
+                    +{dayEvents.length - 3} more
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
-} 
+}

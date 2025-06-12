@@ -5,10 +5,20 @@ export interface Event {
   startTime?: string;
   endTime?: string;
   description?: string;
-  groupId?: string;
+  notes?: string;
+  groupId: string;
   color: string;
+  user_id?: string;
+  imageUrl?: string;
 }
 
 export interface CalendarEvent extends Event {
   isVisible?: boolean;
-} 
+}
+
+export interface CalendarGroup {
+  id: string;
+  name: string;
+  color: string;
+  isVisible?: boolean;
+}

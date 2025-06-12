@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { CalendarLayout } from '@/components/Calendar/CalendarLayout';
-import { EventCreationDialog } from '@/components/Calendar/EventCreationDialog';
 import { useAuth } from '@/context/AuthContext';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
@@ -20,6 +19,7 @@ interface Event {
   user_id: string;
   groupId: string;
   notes?: string;
+  description?: string;
 }
 
 interface CalendarGroup {
@@ -32,26 +32,28 @@ interface EventFormData {
   title: string;
   startDate: Date;
   endDate: Date;
+  isAllDay: boolean;
+  startTime: string;
+  endTime: string;
   color: string;
-  imageUrl?: string;
   groupId: string;
-  notes?: string;
+  description: string;
 }
 
 export default function CalendarPage() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
-  const [groups, setGroups] = useState<Array<{ id: string; name: string; color: string }>>([]);
+  const [groups] = useState<CalendarGroup[]>([
+    { id: '1', name: 'Work', color: '#3B82F6' },
+    { id: '2', name: 'Personal', color: '#10B981' },
+    { id: '3', name: 'Family', color: '#EF4444' },
+    { id: '4', name: 'Health', color: '#8B5CF6' },
+    { id: '5', name: 'Education', color: '#F59E0B' },
+  ]);
   const supabase = createClientComponentClient<Database>();
   const { user } = useAuth();
   const router = useRouter();
-
-  const handleAddEvent = (date: Date) => {
-    setSelectedDate(date);
-    setIsEventDialogOpen(true);
-  };
 
   const handleCreateEvent = async (eventData: EventFormData) => {
     if (!user) return;
@@ -61,12 +63,11 @@ export default function CalendarPage() {
       const newEvent = {
         title: eventData.title,
         date: format(eventData.startDate, 'yyyy-MM-dd'),
-        start_time: format(eventData.startDate, 'HH:mm'),
-        end_time: format(eventData.endDate, 'HH:mm'),
+        start_time: eventData.isAllDay ? null : format(eventData.startDate, 'HH:mm'),
+        end_time: eventData.isAllDay ? null : format(eventData.endDate, 'HH:mm'),
         color: eventData.color,
-        image_url: eventData.imageUrl,
         group_id: eventData.groupId,
-        notes: eventData.notes,
+        notes: eventData.description,
         user_id: user.id
       };
 
@@ -92,7 +93,8 @@ export default function CalendarPage() {
           imageUrl: data.image_url || undefined,
           user_id: data.user_id,
           groupId: data.group_id,
-          notes: data.notes || undefined
+          notes: data.notes || undefined,
+          description: data.notes || undefined
         };
         setEvents(prev => [...prev, transformedEvent]);
       }
@@ -100,7 +102,83 @@ export default function CalendarPage() {
       console.error('Error creating event:', error);
     } finally {
       setIsLoading(false);
-      setIsEventDialogOpen(false);
+    }
+  };
+
+  const handleUpdateEvent = async (eventId: string, eventData: EventFormData) => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const updatedEvent = {
+        title: eventData.title,
+        date: format(eventData.startDate, 'yyyy-MM-dd'),
+        start_time: eventData.isAllDay ? null : format(eventData.startDate, 'HH:mm'),
+        end_time: eventData.isAllDay ? null : format(eventData.endDate, 'HH:mm'),
+        color: eventData.color,
+        group_id: eventData.groupId,
+        notes: eventData.description
+      };
+
+      const { data, error } = await supabase
+        .from('events')
+        .update(updatedEvent)
+        .eq('id', eventId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating event:', error);
+        return;
+      }
+
+      if (data) {
+        const transformedEvent: Event = {
+          id: data.id,
+          title: data.title,
+          date: data.date,
+          startTime: data.start_time || undefined,
+          endTime: data.end_time || undefined,
+          color: data.color,
+          imageUrl: data.image_url || undefined,
+          user_id: data.user_id,
+          groupId: data.group_id,
+          notes: data.notes || undefined,
+          description: data.notes || undefined
+        };
+        setEvents(prev => prev.map(event => 
+          event.id === eventId ? transformedEvent : event
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating event:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting event:', error);
+        return;
+      }
+
+      setEvents(prev => prev.filter(event => event.id !== eventId));
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -134,7 +212,8 @@ export default function CalendarPage() {
             imageUrl: event.image_url || undefined,
             user_id: event.user_id,
             groupId: event.group_id,
-            notes: event.notes || undefined
+            notes: event.notes || undefined,
+            description: event.notes || undefined
           }));
           setEvents(transformedEvents);
         }
@@ -156,17 +235,14 @@ export default function CalendarPage() {
     <div className="h-screen bg-gray-50">
       <CalendarLayout 
         events={events}
-        onAddEvent={handleAddEvent}
-        isLoading={isLoading}
-      />
-
-      <EventCreationDialog
-        isOpen={isEventDialogOpen}
-        onClose={() => setIsEventDialogOpen(false)}
-        onCreateEvent={handleCreateEvent}
-        selectedDate={selectedDate}
         groups={groups}
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        onCreateEvent={handleCreateEvent}
+        onUpdateEvent={handleUpdateEvent}
+        onDeleteEvent={handleDeleteEvent}
+        isLoading={isLoading}
       />
     </div>
   );
-} 
+}

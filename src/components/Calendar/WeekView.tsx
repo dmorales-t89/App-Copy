@@ -7,9 +7,10 @@ interface WeekViewProps {
   currentDate: Date;
   events: Event[];
   onTimeSlotClick: (date: Date, hour: number) => void;
+  onEventClick: (event: Event) => void;
 }
 
-export function WeekView({ currentDate, events, onTimeSlotClick }: WeekViewProps) {
+export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }: WeekViewProps) {
   const weekStart = startOfWeek(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -17,24 +18,37 @@ export function WeekView({ currentDate, events, onTimeSlotClick }: WeekViewProps
   const getHourEvents = (date: Date, hour: number) => {
     return events.filter(event => {
       const eventDate = parseISO(event.date);
-      const eventHour = event.startTime ? parseInt(event.startTime.split(':')[0], 10) : null;
-      return isSameDay(eventDate, date) && eventHour === hour;
+      if (!isSameDay(eventDate, date)) return false;
+      
+      if (!event.startTime) return hour === 0; // All-day events show at midnight
+      
+      const eventHour = parseInt(event.startTime.split(':')[0], 10);
+      return eventHour === hour;
     });
+  };
+
+  const getEventColor = (event: Event) => {
+    return event.color || '#3B82F6';
   };
 
   return (
     <div className="h-full flex flex-col">
-      {/* Time column header */}
-      <div className="grid grid-cols-[60px_1fr] border-b border-[#C2EABD]">
-        <div className="p-2" />
+      {/* Week header */}
+      <div className="grid grid-cols-[80px_1fr] border-b border-[#C2EABD]">
+        <div className="p-3 bg-gray-50" />
         <div className="grid grid-cols-7">
           {weekDays.map((day) => (
             <div
               key={day.toString()}
-              className="p-2 text-center text-sm font-medium text-[#011936] border-l border-[#C2EABD] first:border-l-0"
+              className="p-3 text-center border-l border-[#C2EABD]/20 first:border-l-0 bg-gray-50"
             >
-              <div>{format(day, 'EEE')}</div>
-              <div className="text-xs text-[#011936]/70">{format(day, 'MMM d')}</div>
+              <div className="text-sm font-medium text-[#011936]">{format(day, 'EEE')}</div>
+              <div className={cn(
+                "text-lg font-semibold mt-1 w-8 h-8 flex items-center justify-center rounded-full mx-auto",
+                isSameDay(day, new Date()) ? "bg-[#C2EABD] text-[#011936]" : "text-[#011936]"
+              )}>
+                {format(day, 'd')}
+              </div>
             </div>
           ))}
         </div>
@@ -42,40 +56,51 @@ export function WeekView({ currentDate, events, onTimeSlotClick }: WeekViewProps
 
       {/* Time slots */}
       <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-[60px_1fr]">
+        <div className="grid grid-cols-[80px_1fr]">
           {/* Time labels */}
-          <div className="divide-y divide-[#C2EABD]">
+          <div className="divide-y divide-[#C2EABD]/20">
             {hours.map((hour) => (
-              <div key={hour} className="h-12 p-1">
+              <div key={hour} className="h-16 p-2 bg-gray-50">
                 <span className="text-xs text-[#011936]/70">
-                  {format(new Date().setHours(hour), 'h a')}
+                  {format(new Date().setHours(hour, 0), 'h a')}
                 </span>
               </div>
             ))}
           </div>
 
           {/* Time slots grid */}
-          <div className="grid grid-cols-7 divide-x divide-[#C2EABD]">
+          <div className="grid grid-cols-7 divide-x divide-[#C2EABD]/20">
             {weekDays.map((day) => (
-              <div key={day.toString()} className="divide-y divide-[#C2EABD]">
+              <div key={day.toString()} className="divide-y divide-[#C2EABD]/20">
                 {hours.map((hour) => {
                   const hourEvents = getHourEvents(day, hour);
                   return (
                     <div
                       key={hour}
-                      className="h-12 p-1 hover:bg-[#C2EABD]/5 cursor-pointer"
+                      className="h-16 p-1 hover:bg-[#C2EABD]/5 cursor-pointer relative"
                       onClick={() => onTimeSlotClick(day, hour)}
                     >
-                      {hourEvents.map((event) => (
+                      {hourEvents.map((event, index) => (
                         <div
                           key={event.id}
-                          className={cn(
-                            "text-xs p-1 rounded truncate",
-                            `bg-${event.color}-100 text-${event.color}-900`
-                          )}
-                          title={event.title}
+                          className="text-xs p-1 rounded mb-1 cursor-pointer hover:opacity-80 transition-opacity"
+                          style={{ 
+                            backgroundColor: getEventColor(event), 
+                            color: '#ffffff'
+                          }}
+                          title={`${event.title}${event.startTime ? ` at ${event.startTime}` : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEventClick(event);
+                          }}
                         >
-                          {event.title}
+                          <div className="font-medium truncate">{event.title}</div>
+                          {event.startTime && event.endTime && (
+                            <div className="text-xs opacity-90">
+                              {format(new Date(`2000-01-01T${event.startTime}`), 'h:mm a')} - 
+                              {format(new Date(`2000-01-01T${event.endTime}`), 'h:mm a')}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -88,4 +113,4 @@ export function WeekView({ currentDate, events, onTimeSlotClick }: WeekViewProps
       </div>
     </div>
   );
-} 
+}
