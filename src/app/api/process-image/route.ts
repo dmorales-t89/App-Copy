@@ -25,15 +25,18 @@ Return your response as a JSON array of events in this exact format:
 If you find multiple events, include them all in the array. If no events are found, return an empty array [].
 Only return valid JSON - no additional text or explanations.`;
 
-async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: string) {
+async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: string, retryCount = 0) {
   console.log('API Token length:', apiToken ? apiToken.length : 0);
   console.log('API Token starts with:', apiToken ? apiToken.substring(0, 10) + '...' : 'undefined');
   
-  // Create AbortController for timeout handling - increased to 60 seconds
+  const maxRetries = 2;
+  const retryDelay = 1000 * (retryCount + 1); // Progressive delay: 1s, 2s, 3s
+  
+  // Create AbortController for timeout handling
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, 60000); // Increased from 30 to 60 seconds
+  }, 90000); // Increased to 90 seconds for better stability
 
   try {
     const response = await fetch(
@@ -45,6 +48,7 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://picschedule.app',
           'X-Title': 'PicSchedule',
+          'Connection': 'keep-alive', // Help maintain connection stability
         },
         body: JSON.stringify({
           model: 'opengvlab/internvl3-14b:free',
@@ -119,7 +123,26 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
     clearTimeout(timeoutId);
     
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out after 60 seconds. The AI service may be experiencing high load. Please try again.');
+      throw new Error('Request timed out after 90 seconds. The AI service may be experiencing high load. Please try again.');
+    }
+    
+    // Handle network-related errors with retry logic
+    if (error instanceof TypeError && (
+      error.message === 'fetch failed' || 
+      error.message === 'terminated' ||
+      error.message.includes('other side closed') ||
+      error.message.includes('socket hang up') ||
+      error.message.includes('ECONNRESET')
+    )) {
+      console.log(`Network error occurred (attempt ${retryCount + 1}/${maxRetries + 1}):`, error.message);
+      
+      if (retryCount < maxRetries) {
+        console.log(`Retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return callOpenRouterAPI(base64Image, prompt, apiToken, retryCount + 1);
+      } else {
+        throw new Error(`Network connection failed after ${maxRetries + 1} attempts. The AI service may be temporarily unavailable or experiencing high load. Please try again in a few minutes.`);
+      }
     }
     
     // Re-throw other errors
@@ -273,7 +296,7 @@ export async function POST(request: Request) {
 
     console.log('Processing image with OpenRouter opengvlab/internvl3-14b:free model...');
 
-    // Call OpenRouter API
+    // Call OpenRouter API with retry logic
     const llmResponse = await callOpenRouterAPI(base64Image, LLM_PROMPT, apiToken);
     console.log('LLM Response:', llmResponse);
 
@@ -293,26 +316,34 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error processing image:', error);
     
-    // Check for network-related fetch errors
-    if (error instanceof TypeError && error.message === 'fetch failed') {
-      return NextResponse.json(
-        { 
-          error: 'Network connection failed',
-          details: 'Unable to connect to the OpenRouter API service. Please check your internet connection, verify your OpenRouter API key is valid and has sufficient credits, and ensure the service is available. If the problem persists, the external service may be temporarily unavailable.'
-        },
-        { status: 503 }
-      );
-    }
+    // Enhanced error handling for network issues
+    if (error instanceof Error) {
+      // Check for network-related fetch errors
+      if (error.message.includes('Network connection failed after') || 
+          error.message === 'fetch failed' ||
+          error.message === 'terminated' ||
+          error.message.includes('other side closed') ||
+          error.message.includes('socket hang up') ||
+          error.message.includes('ECONNRESET')) {
+        return NextResponse.json(
+          { 
+            error: 'Network connection failed',
+            details: error.message.includes('after') ? error.message : 'Unable to connect to the OpenRouter API service. The connection was unexpectedly terminated. This may be due to network issues, service overload, or temporary unavailability. Please try again in a few minutes.'
+          },
+          { status: 503 }
+        );
+      }
 
-    // Check for terminated errors
-    if (error instanceof TypeError && error.message === 'terminated') {
-      return NextResponse.json(
-        { 
-          error: 'Request was terminated',
-          details: 'The connection to the AI service was terminated unexpectedly. This may be due to network issues or service overload. Please try again.'
-        },
-        { status: 503 }
-      );
+      // Check for timeout errors
+      if (error.message.includes('timed out')) {
+        return NextResponse.json(
+          { 
+            error: 'Request timeout',
+            details: error.message
+          },
+          { status: 504 }
+        );
+      }
     }
     
     return NextResponse.json(
