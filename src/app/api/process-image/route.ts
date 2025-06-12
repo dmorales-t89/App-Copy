@@ -292,6 +292,18 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error processing image:', error);
+    
+    // Check for network-related fetch errors
+    if (error instanceof TypeError && error.message === 'fetch failed') {
+      return NextResponse.json(
+        { 
+          error: 'Network connection failed',
+          details: 'Unable to connect to the OpenRouter API service. Please check your internet connection, verify your OpenRouter API key is valid and has sufficient credits, and ensure the service is available. If the problem persists, the external service may be temporarily unavailable.'
+        },
+        { status: 503 }
+      );
+    }
+    
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Unknown error occurred',

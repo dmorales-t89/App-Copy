@@ -85,6 +85,18 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error('Error analyzing image:', error);
+    
+    // Check for network-related fetch errors
+    if (error instanceof TypeError && error.message === 'fetch failed') {
+      return NextResponse.json(
+        { 
+          error: 'Network connection failed',
+          details: 'Unable to connect to the image analysis service. Please check your internet connection, verify your OpenRouter API key is valid, and ensure the service is available. If the problem persists, the external service may be temporarily unavailable.'
+        },
+        { status: 503 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to analyze image' },
       { status: 500 }
