@@ -29,11 +29,11 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
   console.log('API Token length:', apiToken ? apiToken.length : 0);
   console.log('API Token starts with:', apiToken ? apiToken.substring(0, 10) + '...' : 'undefined');
   
-  // Create AbortController for timeout handling
+  // Create AbortController for timeout handling - increased to 60 seconds
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, 30000); // 30 second timeout
+  }, 60000); // Increased from 30 to 60 seconds
 
   try {
     const response = await fetch(
@@ -119,7 +119,7 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
     clearTimeout(timeoutId);
     
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out after 30 seconds. Please try again.');
+      throw new Error('Request timed out after 60 seconds. The AI service may be experiencing high load. Please try again.');
     }
     
     // Re-throw other errors
@@ -299,6 +299,17 @@ export async function POST(request: Request) {
         { 
           error: 'Network connection failed',
           details: 'Unable to connect to the OpenRouter API service. Please check your internet connection, verify your OpenRouter API key is valid and has sufficient credits, and ensure the service is available. If the problem persists, the external service may be temporarily unavailable.'
+        },
+        { status: 503 }
+      );
+    }
+
+    // Check for terminated errors
+    if (error instanceof TypeError && error.message === 'terminated') {
+      return NextResponse.json(
+        { 
+          error: 'Request was terminated',
+          details: 'The connection to the AI service was terminated unexpectedly. This may be due to network issues or service overload. Please try again.'
         },
         { status: 503 }
       );

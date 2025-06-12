@@ -30,11 +30,11 @@ export async function POST(request: Request) {
     const buffer = await image.arrayBuffer();
     const base64Image = Buffer.from(buffer).toString('base64');
 
-    // Create AbortController for timeout handling
+    // Create AbortController for timeout handling - increased to 60 seconds
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-    }, 30000); // 30 second timeout
+    }, 60000); // Increased from 30 to 60 seconds
 
     try {
       // Call InternVL API
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       clearTimeout(timeoutId);
       
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Request timed out after 30 seconds. Please try again.');
+        throw new Error('Request timed out after 60 seconds. The AI service may be experiencing high load. Please try again.');
       }
       
       // Re-throw other errors
@@ -91,7 +91,18 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { 
           error: 'Network connection failed',
-          details: 'Unable to connect to the image analysis service. Please check your internet connection, verify your OpenRouter API key is valid, and ensure the service is available. If the problem persists, the external service may be temporarily unavailable.'
+          details: 'Unable to connect to the image analysis service. Please check your internet connection, verify your OpenRouter API key is valid and has sufficient credits, and ensure the service is available. If the problem persists, the external service may be temporarily unavailable.'
+        },
+        { status: 503 }
+      );
+    }
+
+    // Check for terminated errors
+    if (error instanceof TypeError && error.message === 'terminated') {
+      return NextResponse.json(
+        { 
+          error: 'Request was terminated',
+          details: 'The connection to the AI service was terminated unexpectedly. This may be due to network issues or service overload. Please try again.'
         },
         { status: 503 }
       );
