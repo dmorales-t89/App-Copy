@@ -36,15 +36,15 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div
             key={day}
-            className="p-3 text-center text-sm font-medium text-[#011936] bg-gray-50"
+            className="p-3 text-center text-sm font-medium text-[#011936] bg-gray-50 border-r border-[#C2EABD]/20 last:border-r-0"
           >
             {day}
           </div>
         ))}
       </div>
 
-      {/* Calendar grid */}
-      <div className="flex-1 grid grid-cols-7 grid-rows-6">
+      {/* Calendar grid - Fixed height for uniform boxes */}
+      <div className="flex-1 grid grid-cols-7 auto-rows-fr">
         {days.map((day, dayIdx) => {
           const dayEvents = getDayEvents(day);
           const isCurrentMonth = isSameMonth(day, currentDate);
@@ -54,9 +54,9 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
             <div
               key={day.toString()}
               className={cn(
-                "border-r border-b border-[#C2EABD]/20 p-2 cursor-pointer hover:bg-gray-50 transition-colors",
+                "border-r border-b border-[#C2EABD]/20 p-2 cursor-pointer hover:bg-gray-50 transition-colors last:border-r-0",
                 !isCurrentMonth && "bg-gray-50/50",
-                "h-full min-h-[120px] flex flex-col"
+                "flex flex-col min-h-[120px]"
               )}
               onClick={() => onAddEvent(day)}
             >

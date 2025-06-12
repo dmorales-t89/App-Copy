@@ -140,6 +140,8 @@ export function CalendarLayout({
                   mode="single"
                   selected={selectedDate}
                   onSelect={(date) => date && onDateChange(date)}
+                  month={selectedDate}
+                  onMonthChange={onDateChange}
                   className="rounded-md border border-[#C2EABD]"
                 />
               </div>
@@ -273,15 +275,16 @@ export function CalendarLayout({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <div className="border border-[#C2EABD] rounded-md p-1 flex">
+            <div className="border-2 border-[#C2EABD] rounded-lg p-1 flex bg-gray-50">
               <Button
                 variant={view === 'month' ? 'default' : 'ghost'}
                 size="sm"
                 className={cn(
+                  "px-4 py-2 rounded-md transition-all",
                   view === 'month'
-                    ? "bg-[#C2EABD] hover:bg-[#C2EABD]/90"
-                    : "hover:bg-[#C2EABD]/10",
-                  "text-[#011936] font-medium"
+                    ? "bg-[#C2EABD] hover:bg-[#C2EABD]/90 text-[#011936] shadow-sm"
+                    : "hover:bg-[#C2EABD]/10 text-[#011936]",
+                  "font-medium"
                 )}
                 onClick={() => setView('month')}
               >
@@ -291,10 +294,11 @@ export function CalendarLayout({
                 variant={view === 'week' ? 'default' : 'ghost'}
                 size="sm"
                 className={cn(
+                  "px-4 py-2 rounded-md transition-all",
                   view === 'week'
-                    ? "bg-[#C2EABD] hover:bg-[#C2EABD]/90"
-                    : "hover:bg-[#C2EABD]/10",
-                  "text-[#011936] font-medium"
+                    ? "bg-[#C2EABD] hover:bg-[#C2EABD]/90 text-[#011936] shadow-sm"
+                    : "hover:bg-[#C2EABD]/10 text-[#011936]",
+                  "font-medium"
                 )}
                 onClick={() => setView('week')}
               >
