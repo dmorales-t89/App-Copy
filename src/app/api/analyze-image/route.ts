@@ -30,37 +30,59 @@ export async function POST(request: Request) {
     const buffer = await image.arrayBuffer();
     const base64Image = Buffer.from(buffer).toString('base64');
 
-    // Call InternVL API
-    const response = await fetch('https://openrouter.ai/opengvlab/internvl3-14b:free', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      },
-      body: JSON.stringify({
-        image: base64Image,
-        prompt: 'Extract event details from this image. Include title, date, time, and any additional notes or description. Format the response as JSON.',
-      }),
-    });
+    // Create AbortController for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 30000); // 30 second timeout
 
-    if (!response.ok) {
-      throw new Error('Failed to analyze image');
-    }
+    try {
+      // Call InternVL API
+      const response = await fetch('https://openrouter.ai/opengvlab/internvl3-14b:free', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        },
+        body: JSON.stringify({
+          image: base64Image,
+          prompt: 'Extract event details from this image. Include title, date, time, and any additional notes or description. Format the response as JSON.',
+        }),
+        signal: controller.signal
+      });
 
-    const data = await response.json();
+      // Clear timeout on successful response
+      clearTimeout(timeoutId);
 
-    // Process and format the AI response
-    // This is a placeholder - you'll need to parse the actual AI response format
-    const events = [
-      {
-        title: data.title || 'Untitled Event',
-        date: data.date || new Date().toISOString(),
-        time: data.time,
-        description: data.description,
+      if (!response.ok) {
+        throw new Error('Failed to analyze image');
       }
-    ];
 
-    return NextResponse.json({ events });
+      const data = await response.json();
+
+      // Process and format the AI response
+      // This is a placeholder - you'll need to parse the actual AI response format
+      const events = [
+        {
+          title: data.title || 'Untitled Event',
+          date: data.date || new Date().toISOString(),
+          time: data.time,
+          description: data.description,
+        }
+      ];
+
+      return NextResponse.json({ events });
+    } catch (fetchError) {
+      // Clear timeout on error
+      clearTimeout(timeoutId);
+      
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new Error('Request timed out after 30 seconds. Please try again.');
+      }
+      
+      // Re-throw other errors
+      throw fetchError;
+    }
   } catch (error) {
     console.error('Error analyzing image:', error);
     return NextResponse.json(
@@ -68,4 +90,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

@@ -29,79 +29,101 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
   console.log('API Token length:', apiToken ? apiToken.length : 0);
   console.log('API Token starts with:', apiToken ? apiToken.substring(0, 10) + '...' : 'undefined');
   
-  const response = await fetch(
-    'https://openrouter.ai/api/v1/chat/completions',
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://picschedule.app',
-        'X-Title': 'PicSchedule',
-      },
-      body: JSON.stringify({
-        model: 'opengvlab/internvl3-14b:free',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: prompt
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: base64Image
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.1
-      }),
-    }
-  );
-
-  const responseText = await response.text();
-  
-  if (!response.ok) {
-    console.error('OpenRouter API error:', {
-      status: response.status,
-      statusText: response.statusText,
-      responseBody: responseText
-    });
-
-    if (response.status === 401) {
-      throw new Error('UNAUTHORIZED - Invalid OpenRouter API key. Please check your API key is valid and has sufficient credits.');
-    }
-
-    if (response.status === 404) {
-      throw new Error('MODEL_NOT_FOUND - opengvlab/internvl3-14b:free model not available');
-    }
-
-    if (response.status === 503) {
-      throw new Error('MODEL_LOADING - Model is currently loading, please try again');
-    }
-
-    throw new Error(`OpenRouter API error: ${response.status} - ${responseText}`);
-  }
+  // Create AbortController for timeout handling
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, 30000); // 30 second timeout
 
   try {
-    const jsonResponse = JSON.parse(responseText);
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://picschedule.app',
+          'X-Title': 'PicSchedule',
+        },
+        body: JSON.stringify({
+          model: 'opengvlab/internvl3-14b:free',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: prompt
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: base64Image
+                  }
+                }
+              ]
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.1
+        }),
+        signal: controller.signal
+      }
+    );
+
+    // Clear timeout on successful response
+    clearTimeout(timeoutId);
+
+    const responseText = await response.text();
     
-    if (!jsonResponse.choices || !jsonResponse.choices[0] || !jsonResponse.choices[0].message) {
-      throw new Error('Invalid response format from OpenRouter API');
+    if (!response.ok) {
+      console.error('OpenRouter API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        responseBody: responseText
+      });
+
+      if (response.status === 401) {
+        throw new Error('UNAUTHORIZED - Invalid OpenRouter API key. Please check your API key is valid and has sufficient credits.');
+      }
+
+      if (response.status === 404) {
+        throw new Error('MODEL_NOT_FOUND - opengvlab/internvl3-14b:free model not available');
+      }
+
+      if (response.status === 503) {
+        throw new Error('MODEL_LOADING - Model is currently loading, please try again');
+      }
+
+      throw new Error(`OpenRouter API error: ${response.status} - ${responseText}`);
     }
 
-    return jsonResponse.choices[0].message.content;
-  } catch (jsonError) {
-    console.error('Failed to parse JSON response from OpenRouter:', {
-      responseText: responseText,
-      jsonError: jsonError instanceof Error ? jsonError.message : 'Unknown JSON parse error'
-    });
-    throw new Error(`Invalid JSON response from OpenRouter: ${responseText}`);
+    try {
+      const jsonResponse = JSON.parse(responseText);
+      
+      if (!jsonResponse.choices || !jsonResponse.choices[0] || !jsonResponse.choices[0].message) {
+        throw new Error('Invalid response format from OpenRouter API');
+      }
+
+      return jsonResponse.choices[0].message.content;
+    } catch (jsonError) {
+      console.error('Failed to parse JSON response from OpenRouter:', {
+        responseText: responseText,
+        jsonError: jsonError instanceof Error ? jsonError.message : 'Unknown JSON parse error'
+      });
+      throw new Error(`Invalid JSON response from OpenRouter: ${responseText}`);
+    }
+  } catch (error) {
+    // Clear timeout on error
+    clearTimeout(timeoutId);
+    
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timed out after 30 seconds. Please try again.');
+    }
+    
+    // Re-throw other errors
+    throw error;
   }
 }
 
