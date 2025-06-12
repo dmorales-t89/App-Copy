@@ -32,11 +32,11 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
   return (
     <div className="h-full flex flex-col">
       {/* Week day headers */}
-      <div className="grid grid-cols-7 border-b border-[#C2EABD]/20">
+      <div className="grid grid-cols-7 border-b border-[#C2EABD]/50">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div
             key={day}
-            className="p-3 text-center text-sm font-medium text-[#011936] bg-gray-50 border-r border-[#C2EABD]/20 last:border-r-0"
+            className="p-3 text-center text-sm font-medium text-[#011936] bg-gray-50 border-r border-[#C2EABD]/50 last:border-r-0"
           >
             {day}
           </div>
@@ -54,7 +54,7 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
             <div
               key={day.toString()}
               className={cn(
-                "border-r border-b border-[#C2EABD]/20 p-2 cursor-pointer hover:bg-gray-50 transition-colors last:border-r-0",
+                "border-r border-b border-[#C2EABD]/50 p-2 cursor-pointer hover:bg-gray-50 transition-colors last:border-r-0",
                 !isCurrentMonth && "bg-gray-50/50",
                 "flex flex-col min-h-[120px]"
               )}

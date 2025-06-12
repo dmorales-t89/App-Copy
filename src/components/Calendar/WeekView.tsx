@@ -34,13 +34,13 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
   return (
     <div className="h-full flex flex-col">
       {/* Week header */}
-      <div className="grid grid-cols-[80px_1fr] border-b border-[#C2EABD]">
+      <div className="grid grid-cols-[80px_1fr] border-b border-[#C2EABD]/50">
         <div className="p-3 bg-gray-50" />
         <div className="grid grid-cols-7">
           {weekDays.map((day) => (
             <div
               key={day.toString()}
-              className="p-3 text-center border-l border-[#C2EABD]/20 first:border-l-0 bg-gray-50"
+              className="p-3 text-center border-l border-[#C2EABD]/50 first:border-l-0 bg-gray-50"
             >
               <div className="text-sm font-medium text-[#011936]">{format(day, 'EEE')}</div>
               <div className={cn(
@@ -58,7 +58,7 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
       <div className="flex-1 overflow-y-auto">
         <div className="grid grid-cols-[80px_1fr]">
           {/* Time labels */}
-          <div className="divide-y divide-[#C2EABD]/20">
+          <div className="divide-y divide-[#C2EABD]/50">
             {hours.map((hour) => (
               <div key={hour} className="h-16 p-2 bg-gray-50">
                 <span className="text-xs text-[#011936]/70">
@@ -69,9 +69,9 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
           </div>
 
           {/* Time slots grid */}
-          <div className="grid grid-cols-7 divide-x divide-[#C2EABD]/20">
+          <div className="grid grid-cols-7 divide-x divide-[#C2EABD]/50">
             {weekDays.map((day) => (
-              <div key={day.toString()} className="divide-y divide-[#C2EABD]/20">
+              <div key={day.toString()} className="divide-y divide-[#C2EABD]/50">
                 {hours.map((hour) => {
                   const hourEvents = getHourEvents(day, hour);
                   return (
