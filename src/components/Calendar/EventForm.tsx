@@ -133,6 +133,13 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
     onSubmit(finalData);
   });
 
+  // Helper function to get display value for time selects
+  const getTimeDisplayValue = (timeValue: string) => {
+    if (!timeValue) return '';
+    const option = timeOptions.find(opt => opt.value === timeValue);
+    return option ? option.label : timeValue;
+  };
+
   return (
     <div className="max-w-full overflow-hidden">
       <Form {...form}>
@@ -288,9 +295,11 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                           }
                         }}
                       >
-                        <SelectTrigger className="border-gray-300">
+                        <SelectTrigger className="border-gray-300 text-gray-900">
                           <Clock className="mr-2 h-4 w-4" />
-                          <SelectValue placeholder="Time" />
+                          <span className="text-gray-900">
+                            {field.value ? getTimeDisplayValue(field.value) : 'Select time'}
+                          </span>
                         </SelectTrigger>
                         <SelectContent className="z-[70] bg-white border border-gray-200 shadow-lg max-h-[200px]">
                           <ScrollArea className="h-[200px]">
@@ -353,9 +362,11 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                         value={field.value}
                         onValueChange={field.onChange}
                       >
-                        <SelectTrigger className="border-gray-300">
+                        <SelectTrigger className="border-gray-300 text-gray-900">
                           <Clock className="mr-2 h-4 w-4" />
-                          <SelectValue placeholder="Time" />
+                          <span className="text-gray-900">
+                            {field.value ? getTimeDisplayValue(field.value) : 'Select time'}
+                          </span>
                         </SelectTrigger>
                         <SelectContent className="z-[70] bg-white border border-gray-200 shadow-lg max-h-[200px]">
                           <ScrollArea className="h-[200px]">

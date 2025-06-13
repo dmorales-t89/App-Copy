@@ -210,8 +210,11 @@ export function CalendarLayout({
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main Content - This entire section shifts when sidebar opens */}
+      <div className={cn(
+        "flex-1 flex flex-col overflow-hidden transition-all duration-300",
+        showEventForm && "mr-[400px]"
+      )}>
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
           <div className="flex items-center gap-4">
@@ -294,73 +297,68 @@ export function CalendarLayout({
 
         {/* Calendar Content */}
         <div className="flex-1 overflow-hidden">
-          <div className={cn(
-            "h-full transition-all duration-300",
-            showEventForm && "mr-[400px]"
-          )}>
-            {view === 'month' ? (
-              <CalendarView
-                currentDate={selectedDate}
-                events={filteredEvents}
-                onAddEvent={handleDayClick}
-                onEventClick={handleEventClick}
-                groups={groups}
-              />
-            ) : (
-              <WeekView
-                currentDate={selectedDate}
-                events={filteredEvents}
-                onTimeSlotClick={handleTimeSlotClick}
-                onEventClick={handleEventClick}
-              />
-            )}
-          </div>
-
-          {/* Event Form Sidebar */}
-          <AnimatePresence>
-            {showEventForm && (
-              <motion.div
-                initial={{ x: 400 }}
-                animate={{ x: 0 }}
-                exit={{ x: 400 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="fixed top-0 right-0 h-full w-[400px] bg-white shadow-lg border-l border-gray-200 overflow-y-auto z-50"
-              >
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      {editingEvent ? 'Edit Event' : 'Create Event'}
-                    </h2>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setShowEventForm(false);
-                        setEditingEvent(null);
-                      }}
-                      className="hover:bg-gray-100 text-gray-600"
-                    >
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </div>
-                  <EventForm
-                    key={editingEvent?.id || 'new'}
-                    initialDate={selectedDate}
-                    editingEvent={editingEvent}
-                    groups={groups}
-                    onSubmit={handleFormSubmit}
-                    onDelete={handleFormDelete}
-                    onCancel={() => {
-                      setShowEventForm(false);
-                      setEditingEvent(null);
-                    }}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {view === 'month' ? (
+            <CalendarView
+              currentDate={selectedDate}
+              events={filteredEvents}
+              onAddEvent={handleDayClick}
+              onEventClick={handleEventClick}
+              groups={groups}
+            />
+          ) : (
+            <WeekView
+              currentDate={selectedDate}
+              events={filteredEvents}
+              onTimeSlotClick={handleTimeSlotClick}
+              onEventClick={handleEventClick}
+            />
+          )}
         </div>
       </div>
+
+      {/* Event Form Sidebar */}
+      <AnimatePresence>
+        {showEventForm && (
+          <motion.div
+            initial={{ x: 400 }}
+            animate={{ x: 0 }}
+            exit={{ x: 400 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="fixed top-0 right-0 h-full w-[400px] bg-white shadow-lg border-l border-gray-200 overflow-y-auto z-50"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {editingEvent ? 'Edit Event' : 'Create Event'}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setShowEventForm(false);
+                    setEditingEvent(null);
+                  }}
+                  className="hover:bg-gray-100 text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <EventForm
+                key={editingEvent?.id || 'new'}
+                initialDate={selectedDate}
+                editingEvent={editingEvent}
+                groups={groups}
+                onSubmit={handleFormSubmit}
+                onDelete={handleFormDelete}
+                onCancel={() => {
+                  setShowEventForm(false);
+                  setEditingEvent(null);
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
