@@ -56,20 +56,28 @@ export default function CalendarPage() {
   const router = useRouter();
 
   const handleCreateEvent = async (eventData: EventFormData) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found');
+      return;
+    }
 
     setIsLoading(true);
     try {
+      console.log('Creating event with data:', eventData);
+      
       const newEvent = {
         title: eventData.title,
         date: format(eventData.startDate, 'yyyy-MM-dd'),
-        start_time: eventData.isAllDay ? null : format(eventData.startDate, 'HH:mm'),
-        end_time: eventData.isAllDay ? null : format(eventData.endDate, 'HH:mm'),
+        start_time: eventData.isAllDay ? null : eventData.startTime,
+        end_time: eventData.isAllDay ? null : eventData.endTime,
         color: eventData.color,
         group_id: eventData.groupId,
         notes: eventData.description,
-        user_id: user.id
+        user_id: user.id,
+        image_url: null
       };
+
+      console.log('Inserting event into database:', newEvent);
 
       const { data, error } = await supabase
         .from('events')
@@ -79,8 +87,16 @@ export default function CalendarPage() {
 
       if (error) {
         console.error('Error creating event:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         return;
       }
+
+      console.log('Event created successfully:', data);
 
       if (data) {
         const transformedEvent: Event = {
@@ -97,6 +113,7 @@ export default function CalendarPage() {
           description: data.notes || undefined
         };
         setEvents(prev => [...prev, transformedEvent]);
+        console.log('Event added to state:', transformedEvent);
       }
     } catch (error) {
       console.error('Error creating event:', error);
@@ -106,19 +123,26 @@ export default function CalendarPage() {
   };
 
   const handleUpdateEvent = async (eventId: string, eventData: EventFormData) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found');
+      return;
+    }
 
     setIsLoading(true);
     try {
+      console.log('Updating event:', eventId, 'with data:', eventData);
+      
       const updatedEvent = {
         title: eventData.title,
         date: format(eventData.startDate, 'yyyy-MM-dd'),
-        start_time: eventData.isAllDay ? null : format(eventData.startDate, 'HH:mm'),
-        end_time: eventData.isAllDay ? null : format(eventData.endDate, 'HH:mm'),
+        start_time: eventData.isAllDay ? null : eventData.startTime,
+        end_time: eventData.isAllDay ? null : eventData.endTime,
         color: eventData.color,
         group_id: eventData.groupId,
         notes: eventData.description
       };
+
+      console.log('Updating event in database:', updatedEvent);
 
       const { data, error } = await supabase
         .from('events')
@@ -130,8 +154,16 @@ export default function CalendarPage() {
 
       if (error) {
         console.error('Error updating event:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         return;
       }
+
+      console.log('Event updated successfully:', data);
 
       if (data) {
         const transformedEvent: Event = {
@@ -150,6 +182,7 @@ export default function CalendarPage() {
         setEvents(prev => prev.map(event => 
           event.id === eventId ? transformedEvent : event
         ));
+        console.log('Event updated in state:', transformedEvent);
       }
     } catch (error) {
       console.error('Error updating event:', error);
@@ -159,10 +192,15 @@ export default function CalendarPage() {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found');
+      return;
+    }
 
     setIsLoading(true);
     try {
+      console.log('Deleting event:', eventId);
+      
       const { error } = await supabase
         .from('events')
         .delete()
@@ -171,9 +209,16 @@ export default function CalendarPage() {
 
       if (error) {
         console.error('Error deleting event:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         return;
       }
 
+      console.log('Event deleted successfully');
       setEvents(prev => prev.filter(event => event.id !== eventId));
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -184,6 +229,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     if (!user) {
+      console.log('No user, redirecting to login');
       router.push('/login');
       return;
     }
@@ -191,15 +237,26 @@ export default function CalendarPage() {
     const fetchEvents = async () => {
       setIsLoading(true);
       try {
+        console.log('Fetching events for user:', user.id);
+        
         const { data, error } = await supabase
           .from('events')
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .order('date', { ascending: true });
 
         if (error) {
           console.error('Error fetching events:', error);
+          console.error('Error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
           return;
         }
+
+        console.log('Fetched events from database:', data);
 
         if (data) {
           const transformedEvents: Event[] = data.map(event => ({
@@ -216,6 +273,7 @@ export default function CalendarPage() {
             description: event.notes || undefined
           }));
           setEvents(transformedEvents);
+          console.log('Events loaded into state:', transformedEvents);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
