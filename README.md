@@ -44,6 +44,66 @@ npm run dev
 2. Run the migrations in `supabase/migrations/` to set up the database schema
 3. Enable Row Level Security (RLS) policies for the events table
 
+## Network Connectivity Troubleshooting
+
+If you encounter "fetch failed" errors when using the AI image analysis features, this typically indicates a network connectivity issue. Here's how to troubleshoot:
+
+### Common Causes and Solutions
+
+1. **Internet Connectivity**
+   - Ensure your development server has internet access
+   - Test basic connectivity: `ping google.com`
+
+2. **Firewall/Proxy Issues**
+   - Check if outgoing HTTPS connections (port 443) to `openrouter.ai` are blocked
+   - If behind a corporate network, configure proxy settings
+   - Test OpenRouter connectivity: `curl https://openrouter.ai`
+
+3. **DNS Resolution**
+   - Verify DNS can resolve OpenRouter: `nslookup openrouter.ai`
+   - Try using a different DNS server (e.g., 8.8.8.8)
+
+4. **Service Availability**
+   - Check OpenRouter's status page for outages
+   - Verify your API key is valid and has credits
+
+### Debugging Steps
+
+1. **Check Environment Variables**
+   ```bash
+   # Verify your .env.local file contains:
+   OPENROUTER_API_KEY=sk-or-v1-your-key-here
+   ```
+
+2. **Test Network Connectivity**
+   ```bash
+   # Test basic connectivity
+   curl -I https://openrouter.ai
+   
+   # Test API endpoint
+   curl -X POST https://openrouter.ai/api/v1/chat/completions \
+     -H "Authorization: Bearer YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     --data '{"model":"opengvlab/internvl3-14b:free","messages":[{"role":"user","content":"test"}]}'
+   ```
+
+3. **Restart Development Server**
+   ```bash
+   # Stop the server (Ctrl+C) and restart
+   npm run dev
+   ```
+
+4. **Check Server Logs**
+   - Look for detailed error messages in the terminal
+   - Check browser developer console for frontend errors
+
+### Error Messages and Solutions
+
+- **"Network connectivity test failed"**: Basic internet connectivity issue
+- **"Network connection failed after X attempts"**: Persistent connectivity problems
+- **"Request timed out"**: Service overload or slow connection
+- **"UNAUTHORIZED"**: Invalid or expired API key
+
 ## Technologies Used
 
 - Next.js 14 with App Router
