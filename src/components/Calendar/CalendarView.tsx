@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, startOfWeek, endOfWeek, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -32,11 +32,11 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
   return (
     <div className="h-full flex flex-col">
       {/* Week day headers */}
-      <div className="grid grid-cols-7 border-b border-[#C2EABD]/50">
+      <div className="grid grid-cols-7 border-b border-gray-200">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div
             key={day}
-            className="p-3 text-center text-sm font-medium text-[#011936] bg-gray-50 border-r border-[#C2EABD]/50 last:border-r-0"
+            className="p-3 text-center text-sm font-medium text-gray-700 bg-gray-50 border-r border-gray-200 last:border-r-0"
           >
             {day}
           </div>
@@ -48,13 +48,14 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
         {days.map((day, dayIdx) => {
           const dayEvents = getDayEvents(day);
           const isCurrentMonth = isSameMonth(day, currentDate);
-          const isToday = isSameDay(day, new Date());
+          const isDayToday = isToday(day);
+          const isSelected = isSameDay(day, currentDate);
 
           return (
             <div
               key={day.toString()}
               className={cn(
-                "border-r border-b border-[#C2EABD]/50 p-2 cursor-pointer hover:bg-gray-50 transition-colors last:border-r-0",
+                "border-r border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50 transition-colors last:border-r-0",
                 !isCurrentMonth && "bg-gray-50/50",
                 "flex flex-col min-h-[120px]"
               )}
@@ -63,9 +64,10 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
               <div className="flex items-center justify-between mb-2">
                 <span
                   className={cn(
-                    "text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full",
-                    isCurrentMonth ? "text-[#011936]" : "text-[#011936]/50",
-                    isToday && "bg-[#C2EABD] text-[#011936] font-bold"
+                    "text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full transition-colors",
+                    isCurrentMonth ? "text-gray-900" : "text-gray-400",
+                    isDayToday && "bg-[#C2EABD] text-[#011936] font-bold",
+                    isSelected && !isDayToday && "bg-[#C2EABD]/20 text-[#011936] font-bold"
                   )}
                 >
                   {format(day, 'd')}
@@ -96,7 +98,7 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-xs text-[#011936]/70 font-medium">
+                  <div className="text-xs text-gray-600 font-medium">
                     +{dayEvents.length - 3} more
                   </div>
                 )}
