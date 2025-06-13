@@ -231,154 +231,154 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
           />
 
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <FormLabel className="text-gray-900 font-medium block mb-2">Start</FormLabel>
-                <div className="space-y-2">
-                  <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start border-gray-300 text-gray-900",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(field.value, "EEE, MMM d, yyyy") : "Pick a date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[60]" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={(date) => {
-                              if (date) {
-                                field.onChange(date);
-                                if (isBefore(form.getValues('endDate'), date)) {
-                                  form.setValue('endDate', date);
-                                }
+            {/* Start Date and Time - Side by Side */}
+            <div>
+              <FormLabel className="text-gray-900 font-medium block mb-2">Start</FormLabel>
+              <div className="grid grid-cols-2 gap-2">
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start border-gray-300 text-gray-900",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {field.value ? format(field.value, "MMM d") : "Pick date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={(date) => {
+                            if (date) {
+                              field.onChange(date);
+                              if (isBefore(form.getValues('endDate'), date)) {
+                                form.setValue('endDate', date);
                               }
-                            }}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    )}
-                  />
-
-                  {!form.watch("isAllDay") && (
-                    <FormField
-                      control={form.control}
-                      name="startTime"
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            const startTime = new Date(`2000-01-01T${value}`);
-                            const endTime = new Date(`2000-01-01T${form.getValues('endTime')}`);
-                            if (endTime <= startTime) {
-                              const newEndTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-                              form.setValue('endTime', format(newEndTime, 'HH:mm'));
                             }
                           }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                />
+
+                {!form.watch("isAllDay") && (
+                  <FormField
+                    control={form.control}
+                    name="startTime"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          const startTime = new Date(`2000-01-01T${value}`);
+                          const endTime = new Date(`2000-01-01T${form.getValues('endTime')}`);
+                          if (endTime <= startTime) {
+                            const newEndTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+                            form.setValue('endTime', format(newEndTime, 'HH:mm'));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="border-gray-300">
+                          <Clock className="mr-2 h-4 w-4" />
+                          <SelectValue placeholder="Time" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[70] bg-white border border-gray-200 shadow-lg max-h-[200px]">
+                          <ScrollArea className="h-[200px]">
+                            {timeOptions.map((time) => (
+                              <SelectItem key={time.value} value={time.value} className="hover:bg-gray-50 text-gray-900">
+                                {time.label}
+                              </SelectItem>
+                            ))}
+                          </ScrollArea>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* End Date and Time - Side by Side */}
+            <div>
+              <FormLabel className="text-gray-900 font-medium block mb-2">End</FormLabel>
+              <div className="grid grid-cols-2 gap-2">
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start border-gray-300 text-gray-900",
+                            !field.value && "text-muted-foreground"
+                          )}
                         >
-                          <SelectTrigger className="border-gray-300">
-                            <Clock className="mr-2 h-4 w-4" />
-                            <SelectValue placeholder="Select time" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[70] bg-white border border-gray-200 shadow-lg max-h-[200px]">
-                            <ScrollArea className="h-[200px]">
-                              {timeOptions.map((time) => (
-                                <SelectItem key={time.value} value={time.value} className="hover:bg-gray-50">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {field.value ? format(field.value, "MMM d") : "Pick date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={(date) => date && field.onChange(date)}
+                          disabled={(date) =>
+                            date < form.getValues('startDate')
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                />
+
+                {!form.watch("isAllDay") && (
+                  <FormField
+                    control={form.control}
+                    name="endTime"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger className="border-gray-300">
+                          <Clock className="mr-2 h-4 w-4" />
+                          <SelectValue placeholder="Time" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[70] bg-white border border-gray-200 shadow-lg max-h-[200px]">
+                          <ScrollArea className="h-[200px]">
+                            {timeOptions
+                              .filter(time => {
+                                if (!isSameDay(form.getValues('startDate'), form.getValues('endDate'))) {
+                                  return true;
+                                }
+                                const startTime = new Date(`2000-01-01T${form.getValues('startTime')}`);
+                                const currentTime = new Date(`2000-01-01T${time.value}`);
+                                return currentTime > startTime;
+                              })
+                              .map((time) => (
+                                <SelectItem key={time.value} value={time.value} className="hover:bg-gray-50 text-gray-900">
                                   {time.label}
                                 </SelectItem>
                               ))}
-                            </ScrollArea>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <FormLabel className="text-gray-900 font-medium block mb-2">End</FormLabel>
-                <div className="space-y-2">
-                  <FormField
-                    control={form.control}
-                    name="endDate"
-                    render={({ field }) => (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start border-gray-300 text-gray-900",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(field.value, "EEE, MMM d, yyyy") : "Pick a date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[60]" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={(date) => date && field.onChange(date)}
-                            disabled={(date) =>
-                              date < form.getValues('startDate')
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
+                          </ScrollArea>
+                        </SelectContent>
+                      </Select>
                     )}
                   />
-
-                  {!form.watch("isAllDay") && (
-                    <FormField
-                      control={form.control}
-                      name="endTime"
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger className="border-gray-300">
-                            <Clock className="mr-2 h-4 w-4" />
-                            <SelectValue placeholder="Select time" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[70] bg-white border border-gray-200 shadow-lg max-h-[200px]">
-                            <ScrollArea className="h-[200px]">
-                              {timeOptions
-                                .filter(time => {
-                                  if (!isSameDay(form.getValues('startDate'), form.getValues('endDate'))) {
-                                    return true;
-                                  }
-                                  const startTime = new Date(`2000-01-01T${form.getValues('startTime')}`);
-                                  const currentTime = new Date(`2000-01-01T${time.value}`);
-                                  return currentTime > startTime;
-                                })
-                                .map((time) => (
-                                  <SelectItem key={time.value} value={time.value} className="hover:bg-gray-50">
-                                    {time.label}
-                                  </SelectItem>
-                                ))}
-                            </ScrollArea>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -427,7 +427,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                 type="submit"
                 className="bg-[#1a73e8] text-white hover:bg-[#1557b0]"
               >
-                {editingEvent ? 'Save' : 'Save'}
+                Save
               </Button>
             </div>
           </div>
