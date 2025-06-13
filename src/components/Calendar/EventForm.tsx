@@ -89,8 +89,10 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
     const options = [];
     for (let hour = 0; hour < 24; hour++) {
       for (let minute = 0; minute < 60; minute += 15) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        options.push(time);
+        const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const timeDate = new Date(`2000-01-01T${time24}`);
+        const time12 = format(timeDate, 'h:mma').toLowerCase();
+        options.push({ value: time24, label: time12 });
       }
     }
     return options;
@@ -140,11 +142,11 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[#011936] font-medium">Title</FormLabel>
+                <FormLabel className="text-gray-900 font-medium">Title</FormLabel>
                 <FormControl>
                   <Input 
                     {...field} 
-                    className="border-[#C2EABD] text-[#011936] placeholder:text-[#011936]/50" 
+                    className="border-gray-300 text-gray-900 placeholder:text-gray-500" 
                     placeholder="Add title"
                   />
                 </FormControl>
@@ -157,14 +159,14 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
             name="groupId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[#011936] font-medium">Calendar</FormLabel>
+                <FormLabel className="text-gray-900 font-medium">Calendar</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger className="border-[#C2EABD]">
+                    <SelectTrigger className="border-gray-300">
                       <SelectValue placeholder="Select a calendar" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="z-[60] bg-white border border-gray-200 shadow-lg">
                     {groups.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
                         <div className="flex items-center gap-2">
@@ -187,15 +189,15 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
             name="color"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[#011936] font-medium">Event Color</FormLabel>
-                <div className="flex flex-wrap gap-2 p-2 border rounded-md border-[#C2EABD]">
+                <FormLabel className="text-gray-900 font-medium">Event Color</FormLabel>
+                <div className="flex flex-wrap gap-2 p-2 border rounded-md border-gray-300">
                   {predefinedColors.map((color) => (
                     <button
                       key={color}
                       type="button"
                       className={cn(
                         "w-6 h-6 rounded-full transition-all",
-                        field.value === color && "ring-2 ring-offset-2 ring-[#011936]"
+                        field.value === color && "ring-2 ring-offset-2 ring-gray-400"
                       )}
                       style={{ backgroundColor: color }}
                       onClick={() => field.onChange(color)}
@@ -210,10 +212,10 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
             control={form.control}
             name="isAllDay"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-[#C2EABD] p-3">
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-300 p-3">
                 <div className="space-y-0.5">
-                  <FormLabel className="text-[#011936] font-medium">All Day</FormLabel>
-                  <FormDescription className="text-[#011936]/70">
+                  <FormLabel className="text-gray-900 font-medium">All Day</FormLabel>
+                  <FormDescription className="text-gray-600">
                     Event will take the entire day
                   </FormDescription>
                 </div>
@@ -221,7 +223,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                   <Switch
                     checked={field.value}
                     onCheckedChange={field.onChange}
-                    className="data-[state=checked]:bg-[#C2EABD]"
+                    className="data-[state=checked]:bg-[#1a73e8]"
                   />
                 </FormControl>
               </FormItem>
@@ -231,7 +233,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <FormLabel className="text-[#011936] font-medium block mb-2">Start</FormLabel>
+                <FormLabel className="text-gray-900 font-medium block mb-2">Start</FormLabel>
                 <div className="space-y-2">
                   <FormField
                     control={form.control}
@@ -242,7 +244,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start border-[#C2EABD] text-[#011936]",
+                              "w-full justify-start border-gray-300 text-gray-900",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -250,7 +252,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                             {field.value ? format(field.value, "EEE, MMM d, yyyy") : "Pick a date"}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 z-[60]" align="start">
                           <Calendar
                             mode="single"
                             selected={field.value}
@@ -286,15 +288,15 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                             }
                           }}
                         >
-                          <SelectTrigger className="border-[#C2EABD]">
+                          <SelectTrigger className="border-gray-300">
                             <Clock className="mr-2 h-4 w-4" />
                             <SelectValue placeholder="Select time" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[70] bg-white border border-gray-200 shadow-lg max-h-[200px]">
                             <ScrollArea className="h-[200px]">
                               {timeOptions.map((time) => (
-                                <SelectItem key={time} value={time}>
-                                  {format(new Date(`2000-01-01T${time}`), 'h:mm a')}
+                                <SelectItem key={time.value} value={time.value} className="hover:bg-gray-50">
+                                  {time.label}
                                 </SelectItem>
                               ))}
                             </ScrollArea>
@@ -307,7 +309,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
               </div>
 
               <div>
-                <FormLabel className="text-[#011936] font-medium block mb-2">End</FormLabel>
+                <FormLabel className="text-gray-900 font-medium block mb-2">End</FormLabel>
                 <div className="space-y-2">
                   <FormField
                     control={form.control}
@@ -318,7 +320,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start border-[#C2EABD] text-[#011936]",
+                              "w-full justify-start border-gray-300 text-gray-900",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -326,7 +328,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                             {field.value ? format(field.value, "EEE, MMM d, yyyy") : "Pick a date"}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 z-[60]" align="start">
                           <Calendar
                             mode="single"
                             selected={field.value}
@@ -350,11 +352,11 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                           value={field.value}
                           onValueChange={field.onChange}
                         >
-                          <SelectTrigger className="border-[#C2EABD]">
+                          <SelectTrigger className="border-gray-300">
                             <Clock className="mr-2 h-4 w-4" />
                             <SelectValue placeholder="Select time" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[70] bg-white border border-gray-200 shadow-lg max-h-[200px]">
                             <ScrollArea className="h-[200px]">
                               {timeOptions
                                 .filter(time => {
@@ -362,12 +364,12 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                                     return true;
                                   }
                                   const startTime = new Date(`2000-01-01T${form.getValues('startTime')}`);
-                                  const currentTime = new Date(`2000-01-01T${time}`);
+                                  const currentTime = new Date(`2000-01-01T${time.value}`);
                                   return currentTime > startTime;
                                 })
                                 .map((time) => (
-                                  <SelectItem key={time} value={time}>
-                                    {format(new Date(`2000-01-01T${time}`), 'h:mm a')}
+                                  <SelectItem key={time.value} value={time.value} className="hover:bg-gray-50">
+                                    {time.label}
                                   </SelectItem>
                                 ))}
                             </ScrollArea>
@@ -386,11 +388,11 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[#011936] font-medium">Description</FormLabel>
+                <FormLabel className="text-gray-900 font-medium">Description</FormLabel>
                 <FormControl>
                   <Textarea
                     {...field}
-                    className="min-h-[80px] border-[#C2EABD] text-[#011936] placeholder:text-[#011936]/50 resize-none"
+                    className="min-h-[80px] border-gray-300 text-gray-900 placeholder:text-gray-500 resize-none"
                     placeholder="Add description..."
                   />
                 </FormControl>
@@ -417,15 +419,15 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                 type="button"
                 variant="outline"
                 onClick={onCancel}
-                className="border-[#C2EABD] text-[#011936] hover:bg-[#C2EABD]/10"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="bg-[#C2EABD] text-[#011936] hover:bg-[#C2EABD]/90"
+                className="bg-[#1a73e8] text-white hover:bg-[#1557b0]"
               >
-                {editingEvent ? 'Save Changes' : 'Create Event'}
+                {editingEvent ? 'Save' : 'Save'}
               </Button>
             </div>
           </div>
