@@ -87,8 +87,10 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
                 "h-6 w-6 text-xs flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors",
                 !isCurrentMonth && "text-gray-300",
                 isCurrentMonth && "text-gray-900",
-                isDayToday && !isSelected && "bg-[#C2EABD]/20 text-[#011936] font-medium",
-                isSelected && "bg-[#C2EABD] text-[#011936] font-medium hover:bg-[#C2EABD]/90"
+                // Today gets light blue background, always takes priority
+                isDayToday && "bg-[#A3D5FF] text-[#011936] font-medium hover:bg-[#A3D5FF]/90",
+                // Selected date gets light green background, but only if it's not today
+                isSelected && !isDayToday && "bg-[#C2EABD] text-[#011936] font-medium hover:bg-[#C2EABD]/90"
               )}
             >
               {format(day, 'd')}

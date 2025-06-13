@@ -244,7 +244,7 @@ export function CalendarLayout({
               <Button
                 variant="ghost"
                 onClick={() => onDateChange(new Date())}
-                className="hover:bg-gray-100 text-gray-600 font-medium px-4"
+                className="bg-[#A3D5FF] hover:bg-[#A3D5FF]/90 text-[#011936] font-medium px-4 border border-[#A3D5FF]"
               >
                 Today
               </Button>

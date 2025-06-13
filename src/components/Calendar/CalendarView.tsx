@@ -66,8 +66,10 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
                   className={cn(
                     "text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full transition-colors",
                     isCurrentMonth ? "text-gray-900" : "text-gray-400",
-                    isDayToday && "bg-[#C2EABD] text-[#011936] font-bold",
-                    isSelected && !isDayToday && "bg-[#C2EABD]/20 text-[#011936] font-bold"
+                    // Today gets light blue background, always takes priority
+                    isDayToday && "bg-[#A3D5FF] text-[#011936] font-bold",
+                    // Selected date gets light green background, but only if it's not today
+                    isSelected && !isDayToday && "bg-[#C2EABD] text-[#011936] font-bold"
                   )}
                 >
                   {format(day, 'd')}
