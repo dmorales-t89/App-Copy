@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
@@ -27,8 +28,11 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const [isConfigured] = useState(isSupabaseConfigured());
   const router = useRouter();
 
+  // Initialize Supabase client for client components
+  const supabase = createClientComponentClient();
+
   useEffect(() => {
-    if (!isConfigured || !supabase) {
+    if (!isConfigured) {
       console.warn('Supabase not configured - skipping auth initialization');
       setLoading(false);
       return;
@@ -94,7 +98,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, isConfigured]);
+  }, [router, isConfigured, supabase]);
 
   const signInWithGoogle = useCallback(async (): Promise<{ error: AuthError | null }> => {
     if (!supabase) {
@@ -127,7 +131,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [supabase]);
   
   const signInWithEmail = useCallback(async (email: string, password: string): Promise<{ error: AuthError | null }> => {
     if (!supabase) {
@@ -149,7 +153,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   const signUpWithEmail = async (email: string, password: string) => {
     if (!supabase) {
