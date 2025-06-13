@@ -8,6 +8,8 @@ import { ChevronLeft, ChevronRight, Plus, X, Loader2, Search, Menu } from 'lucid
 import { CalendarView } from './CalendarView';
 import { WeekView } from './WeekView';
 import { EventForm } from './EventForm';
+import { ImageScanButton } from './ImageScanButton';
+import { ExtractedEventsSidebar } from './ExtractedEventsSidebar';
 import { cn } from '@/lib/utils';
 import { MiniCalendar } from '@/components/ui/mini-calendar';
 import { Input } from '@/components/ui/input';
@@ -30,6 +32,13 @@ interface EventFormData {
   endTime: string;
   color: string;
   groupId: string;
+}
+
+interface ExtractedEvent {
+  title: string;
+  date: Date;
+  time?: string;
+  description?: string;
 }
 
 interface CalendarLayoutProps {
@@ -61,6 +70,10 @@ export function CalendarLayout({
   const [groups, setGroups] = useState<Group[]>(
     initialGroups.map(group => ({ ...group, isVisible: true }))
   );
+  
+  // New state for extracted events
+  const [extractedEvents, setExtractedEvents] = useState<ExtractedEvent[]>([]);
+  const [showExtractedEventsSidebar, setShowExtractedEventsSidebar] = useState(false);
 
   const handleDayClick = (date: Date) => {
     onDateChange(date);
@@ -111,6 +124,50 @@ export function CalendarLayout({
     setGroups(groups.map(group => 
       group.id === groupId ? { ...group, isVisible: !group.isVisible } : group
     ));
+  };
+
+  // Handle extracted events from image scanning
+  const handleEventsExtracted = (events: ExtractedEvent[]) => {
+    console.log('Events extracted from image:', events);
+    setExtractedEvents(events);
+    setShowExtractedEventsSidebar(true);
+  };
+
+  const handleConfirmExtractedEvent = async (eventData: EventFormData) => {
+    console.log('Confirming extracted event:', eventData);
+    await onCreateEvent(eventData);
+  };
+
+  const handleDiscardExtractedEvent = (index: number) => {
+    setExtractedEvents(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleConfirmAllExtractedEvents = async () => {
+    console.log('Confirming all extracted events');
+    
+    for (const event of extractedEvents) {
+      const eventData: EventFormData = {
+        title: event.title,
+        description: event.description || '',
+        startDate: event.date,
+        endDate: event.date,
+        isAllDay: !event.time,
+        startTime: event.time || '09:00',
+        endTime: event.time ? format(new Date(`2000-01-01T${event.time}`).getTime() + 60 * 60 * 1000, 'HH:mm') : '10:00',
+        color: groups[0]?.color || '#3B82F6',
+        groupId: groups[0]?.id || '1',
+      };
+      
+      await onCreateEvent(eventData);
+    }
+    
+    setExtractedEvents([]);
+    setShowExtractedEventsSidebar(false);
+  };
+
+  const handleDiscardAllExtractedEvents = () => {
+    setExtractedEvents([]);
+    setShowExtractedEventsSidebar(false);
   };
 
   const filteredEvents = events.filter(event => {
@@ -165,6 +222,11 @@ export function CalendarLayout({
                     className="pl-10 border-gray-200 rounded-lg"
                   />
                 </div>
+              </div>
+
+              {/* Image Scan Button */}
+              <div className="space-y-3">
+                <ImageScanButton onEventsExtracted={handleEventsExtracted} />
               </div>
 
               {/* My Calendars */}
@@ -359,6 +421,18 @@ export function CalendarLayout({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Extracted Events Sidebar */}
+      <ExtractedEventsSidebar
+        isOpen={showExtractedEventsSidebar}
+        events={extractedEvents}
+        groups={groups}
+        onClose={() => setShowExtractedEventsSidebar(false)}
+        onConfirmEvent={handleConfirmExtractedEvent}
+        onDiscardEvent={handleDiscardExtractedEvent}
+        onConfirmAll={handleConfirmAllExtractedEvents}
+        onDiscardAll={handleDiscardAllExtractedEvents}
+      />
     </div>
   );
 }
