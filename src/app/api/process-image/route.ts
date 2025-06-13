@@ -27,10 +27,10 @@ Only return valid JSON - no additional text or explanations.`;
 
 async function testNetworkConnectivity(): Promise<{ success: boolean; error?: string }> {
   try {
-    // Test basic connectivity to OpenRouter
+    // Test basic connectivity to OpenRouter with shorter timeout
     const testResponse = await fetch('https://openrouter.ai', {
       method: 'HEAD',
-      signal: AbortSignal.timeout(10000) // 10 second timeout for connectivity test
+      signal: AbortSignal.timeout(5000) // Reduced to 5 second timeout
     });
     
     return { success: true };
@@ -47,15 +47,15 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
   console.log('API Token length:', apiToken ? apiToken.length : 0);
   console.log('API Token starts with:', apiToken ? apiToken.substring(0, 10) + '...' : 'undefined');
   
-  const maxRetries = 2;
-  const retryDelay = 1000 * (retryCount + 1); // Progressive delay: 1s, 2s, 3s
+  const maxRetries = 1; // Reduced retries to fail faster
+  const retryDelay = 2000; // Fixed 2 second delay
   
   // Test network connectivity before making the API call
   if (retryCount === 0) {
     console.log('Testing network connectivity to OpenRouter...');
     const connectivityTest = await testNetworkConnectivity();
     if (!connectivityTest.success) {
-      throw new Error(`Network connectivity test failed: ${connectivityTest.error}. Please check your internet connection and firewall settings.`);
+      throw new Error(`NETWORK_UNAVAILABLE: ${connectivityTest.error}`);
     }
     console.log('Network connectivity test passed');
   }
@@ -64,7 +64,7 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, 90000); // 90 seconds timeout
+  }, 30000); // Reduced to 30 seconds timeout
 
   try {
     console.log(`Making API request to OpenRouter (attempt ${retryCount + 1}/${maxRetries + 1})...`);
@@ -158,7 +158,7 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
     console.error(`API call failed (attempt ${retryCount + 1}):`, error);
     
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out after 90 seconds. The AI service may be experiencing high load. Please try again.');
+      throw new Error('REQUEST_TIMEOUT: Request timed out after 30 seconds. The AI service may be experiencing high load.');
     }
     
     // Enhanced network error handling
@@ -184,25 +184,7 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
           await new Promise(resolve => setTimeout(resolve, retryDelay));
           return callOpenRouterAPI(base64Image, prompt, apiToken, retryCount + 1);
         } else {
-          // Provide detailed network troubleshooting information
-          const networkErrorMessage = `
-Network connection failed after ${maxRetries + 1} attempts. This indicates a connectivity issue between your server and OpenRouter's API.
-
-Possible causes and solutions:
-1. Internet connectivity: Ensure your server has internet access
-2. Firewall/Proxy: Check if outgoing HTTPS connections to openrouter.ai are blocked
-3. DNS resolution: Verify that openrouter.ai can be resolved
-4. Service availability: OpenRouter's API may be temporarily unavailable
-
-Original error: ${error.message}
-
-To troubleshoot:
-- Test connectivity: curl https://openrouter.ai
-- Check DNS: nslookup openrouter.ai
-- Verify firewall settings for outgoing HTTPS (port 443)
-          `.trim();
-          
-          throw new Error(networkErrorMessage);
+          throw new Error(`NETWORK_ERROR: ${error.message}`);
         }
       }
     }
@@ -210,6 +192,15 @@ To troubleshoot:
     // Re-throw other errors
     throw error;
   }
+}
+
+function createFallbackEvent(imageFileName?: string): CalendarEvent[] {
+  return [{
+    title: 'Manual Event Entry Required',
+    date: new Date().toISOString(),
+    description: `AI image analysis is currently unavailable due to network connectivity issues. Please manually create your event.${imageFileName ? ` Image: ${imageFileName}` : ''}`,
+    isValidDate: true
+  }];
 }
 
 function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
@@ -353,7 +344,7 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json();
-    const { base64Image } = data;
+    const { base64Image, fileName } = data;
 
     if (!validateBase64Image(base64Image)) {
       return NextResponse.json(
@@ -364,24 +355,52 @@ export async function POST(request: Request) {
 
     console.log('Processing image with OpenRouter opengvlab/internvl3-14b:free model...');
 
-    // Call OpenRouter API with enhanced error handling
-    const llmResponse = await callOpenRouterAPI(base64Image, LLM_PROMPT, apiToken);
-    console.log('LLM Response received successfully');
+    try {
+      // Call OpenRouter API with enhanced error handling
+      const llmResponse = await callOpenRouterAPI(base64Image, LLM_PROMPT, apiToken);
+      console.log('LLM Response received successfully');
 
-    // Extract events from LLM response
-    const events = extractEventsFromLLMResponse(llmResponse);
-    console.log('Extracted events:', events.length);
+      // Extract events from LLM response
+      const events = extractEventsFromLLMResponse(llmResponse);
+      console.log('Extracted events:', events.length);
 
-    // Filter out events with no valid dates if needed
-    const validEvents = events.filter(event => event.isValidDate);
+      // Filter out events with no valid dates if needed
+      const validEvents = events.filter(event => event.isValidDate);
 
-    return NextResponse.json({
-      text: llmResponse,
-      events: validEvents,
-      allEvents: events, // Include all events (even with invalid dates) for debugging
-      modelUsed: 'opengvlab/internvl3-14b:free (OpenRouter)',
-      timestamp: new Date().toISOString()
-    });
+      return NextResponse.json({
+        text: llmResponse,
+        events: validEvents,
+        allEvents: events, // Include all events (even with invalid dates) for debugging
+        modelUsed: 'opengvlab/internvl3-14b:free (OpenRouter)',
+        timestamp: new Date().toISOString(),
+        fallbackUsed: false
+      });
+    } catch (aiError) {
+      console.error('AI processing failed, providing fallback:', aiError);
+      
+      // Check if it's a network-related error
+      if (aiError instanceof Error && 
+          (aiError.message.includes('NETWORK_UNAVAILABLE') || 
+           aiError.message.includes('NETWORK_ERROR') ||
+           aiError.message.includes('REQUEST_TIMEOUT'))) {
+        
+        // Return fallback event instead of failing completely
+        const fallbackEvents = createFallbackEvent(fileName);
+        
+        return NextResponse.json({
+          text: 'AI analysis unavailable due to network connectivity issues.',
+          events: fallbackEvents,
+          allEvents: fallbackEvents,
+          modelUsed: 'Fallback (Network Issue)',
+          timestamp: new Date().toISOString(),
+          fallbackUsed: true,
+          fallbackReason: 'Network connectivity issue with AI service'
+        });
+      }
+      
+      // Re-throw non-network errors
+      throw aiError;
+    }
   } catch (error) {
     console.error('=== Error processing image ===');
     console.error('Error details:', error);
@@ -389,29 +408,30 @@ export async function POST(request: Request) {
     
     if (error instanceof Error) {
       // Check for network connectivity issues
-      if (error.message.includes('Network connectivity test failed')) {
+      if (error.message.includes('NETWORK_UNAVAILABLE')) {
         return NextResponse.json(
           { 
             error: 'Network connectivity issue',
-            details: error.message,
+            details: 'Cannot connect to AI service. This may be due to network restrictions in your environment.',
             troubleshooting: {
               step1: 'Check your internet connection',
               step2: 'Verify firewall settings allow HTTPS connections to openrouter.ai',
               step3: 'If behind a corporate network, check proxy settings',
               step4: 'Test connectivity: curl https://openrouter.ai',
               step5: 'Restart your development server'
-            }
+            },
+            suggestion: 'You can still create events manually while we work on resolving the connectivity issue.'
           },
           { status: 503 }
         );
       }
 
       // Check for detailed network error messages
-      if (error.message.includes('Network connection failed after')) {
+      if (error.message.includes('NETWORK_ERROR')) {
         return NextResponse.json(
           { 
             error: 'Network connection failed',
-            details: error.message,
+            details: 'Unable to reach AI service after multiple attempts.',
             troubleshooting: {
               immediate: 'The server cannot reach OpenRouter\'s API',
               causes: [
@@ -427,19 +447,20 @@ export async function POST(request: Request) {
                 'Check OpenRouter status page',
                 'Restart development server'
               ]
-            }
+            },
+            suggestion: 'Manual event creation is still available.'
           },
           { status: 503 }
         );
       }
 
       // Check for timeout errors
-      if (error.message.includes('timed out')) {
+      if (error.message.includes('REQUEST_TIMEOUT')) {
         return NextResponse.json(
           { 
             error: 'Request timeout',
-            details: error.message,
-            suggestion: 'The AI service is taking longer than expected. Please try again.'
+            details: 'AI service is taking too long to respond.',
+            suggestion: 'The AI service may be experiencing high load. Please try again or create events manually.'
           },
           { status: 504 }
         );
@@ -467,7 +488,8 @@ export async function POST(request: Request) {
         error: error instanceof Error ? error.message : 'Unknown error occurred',
         details: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString(),
-        troubleshooting: 'If this error persists, please check the server logs and verify your network connectivity.'
+        troubleshooting: 'If this error persists, please check the server logs and verify your network connectivity.',
+        suggestion: 'You can still create events manually while we investigate this issue.'
       },
       { status: 500 }
     );

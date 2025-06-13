@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Camera, Upload, Loader2, AlertCircle } from 'lucide-react';
+import { Camera, Upload, Loader2, AlertCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { processCalendarImage } from '@/lib/imageProcessing';
 
@@ -22,6 +22,7 @@ interface ImageScanButtonProps {
 export function ImageScanButton({ onEventsExtracted, className }: ImageScanButtonProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isNetworkIssue, setIsNetworkIssue] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (files: FileList | null) => {
@@ -32,17 +33,20 @@ export function ImageScanButton({ onEventsExtracted, className }: ImageScanButto
     // Validate file type
     if (!file.type.startsWith('image/')) {
       setError('Please select an image file');
+      setIsNetworkIssue(false);
       return;
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setError('Image file too large. Please select a file under 10MB.');
+      setIsNetworkIssue(false);
       return;
     }
 
     setIsProcessing(true);
     setError(null);
+    setIsNetworkIssue(false);
 
     try {
       console.log('Processing image for event extraction:', file.name);
@@ -50,7 +54,8 @@ export function ImageScanButton({ onEventsExtracted, className }: ImageScanButto
       console.log('Events extracted successfully:', events);
       
       if (events.length === 0) {
-        setError('No events found in the image. Try another image with clearer event details.');
+        setError('No events found in the image. Try another image with clearer event details, or create your event manually.');
+        setIsNetworkIssue(false);
         return;
       }
 
@@ -59,17 +64,30 @@ export function ImageScanButton({ onEventsExtracted, className }: ImageScanButto
       console.error('Error processing image:', err);
       
       if (err instanceof Error) {
-        if (err.message.includes('Network')) {
-          setError('Network connection issue. Please check your internet connection and try again.');
-        } else if (err.message.includes('API key')) {
-          setError('AI service configuration issue. Please contact support.');
+        // Check for network-related issues
+        const isNetworkError = err.message.includes('network') ||
+                              err.message.includes('connectivity') ||
+                              err.message.includes('firewall') ||
+                              err.message.includes('connect to the AI') ||
+                              err.message.includes('unavailable due to');
+        
+        setIsNetworkIssue(isNetworkError);
+        
+        if (isNetworkError) {
+          setError(err.message);
         } else if (err.message.includes('timeout')) {
-          setError('The AI service is taking too long. Please try again.');
+          setError('The AI service is taking too long. Please try again or create your event manually.');
+          setIsNetworkIssue(false);
+        } else if (err.message.includes('API key') || err.message.includes('configuration')) {
+          setError('AI service configuration issue. Please create your event manually or contact support.');
+          setIsNetworkIssue(false);
         } else {
-          setError(`Failed to process image: ${err.message}`);
+          setError(err.message);
+          setIsNetworkIssue(false);
         }
       } else {
-        setError('An unexpected error occurred. Please try again.');
+        setError('An unexpected error occurred. Please try again or create your event manually.');
+        setIsNetworkIssue(false);
       }
     } finally {
       setIsProcessing(false);
@@ -160,19 +178,48 @@ export function ImageScanButton({ onEventsExtracted, className }: ImageScanButto
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border border-red-200 rounded-lg p-3"
+          className={cn(
+            "border rounded-lg p-3",
+            isNetworkIssue 
+              ? "bg-amber-50 border-amber-200" 
+              : "bg-red-50 border-red-200"
+          )}
         >
           <div className="flex items-start space-x-3">
-            <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+            {isNetworkIssue ? (
+              <Info className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+            )}
             <div className="flex-1">
-              <p className="text-sm text-red-700 font-medium">Error</p>
-              <p className="text-sm text-red-600 mt-1">{error}</p>
+              <p className={cn(
+                "text-sm font-medium",
+                isNetworkIssue ? "text-amber-700" : "text-red-700"
+              )}>
+                {isNetworkIssue ? "AI Service Unavailable" : "Error"}
+              </p>
+              <p className={cn(
+                "text-sm mt-1",
+                isNetworkIssue ? "text-amber-600" : "text-red-600"
+              )}>
+                {error}
+              </p>
+              {isNetworkIssue && (
+                <p className="text-xs text-amber-600 mt-2 font-medium">
+                  💡 You can still create events manually using the form below
+                </p>
+              )}
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setError(null)}
-              className="text-red-500 hover:text-red-700 p-1"
+              className={cn(
+                "p-1",
+                isNetworkIssue 
+                  ? "text-amber-500 hover:text-amber-700" 
+                  : "text-red-500 hover:text-red-700"
+              )}
             >
               ×
             </Button>
