@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Clock, Trash2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon, Clock, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Event } from '@/types/calendar';
@@ -187,20 +188,40 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                 name="startDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormControl>
-                      <DatePicker
-                        selectedDate={field.value}
-                        onDateSelect={(date) => {
-                          field.onChange(date);
-                          if (isBefore(form.getValues('endDate'), date)) {
-                            form.setValue('endDate', date);
-                          }
-                        }}
-                        placeholder="Select start date"
-                        label="Start date"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20"
-                      />
-                    </FormControl>
+                    <FormLabel className="text-gray-900 font-medium">Start date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 px-3 py-3 h-auto",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
+                            <span className="text-gray-900 font-medium">
+                              {field.value ? format(field.value, "EEEE, MMMM d, yyyy") : "Pick a date"}
+                            </span>
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={(date) => {
+                            if (date) {
+                              field.onChange(date);
+                              if (isBefore(form.getValues('endDate'), date)) {
+                                form.setValue('endDate', date);
+                              }
+                            }
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </FormItem>
                 )}
               />
@@ -225,9 +246,9 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                               }
                             }}
                           >
-                            <SelectTrigger className="border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 focus:border-[#1a73e8]">
+                            <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto">
                               <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                              <span className="text-gray-900">
+                              <span className="text-gray-900 font-medium">
                                 {field.value ? getTimeDisplayValue(field.value) : 'Start time'}
                               </span>
                             </SelectTrigger>
@@ -256,9 +277,9 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                             value={field.value}
                             onValueChange={field.onChange}
                           >
-                            <SelectTrigger className="border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 focus:border-[#1a73e8]">
+                            <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto">
                               <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                              <span className="text-gray-900">
+                              <span className="text-gray-900 font-medium">
                                 {field.value ? getTimeDisplayValue(field.value) : 'End time'}
                               </span>
                             </SelectTrigger>
@@ -295,15 +316,36 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
               name="endDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormControl>
-                    <DatePicker
-                      selectedDate={field.value}
-                      onDateSelect={field.onChange}
-                      placeholder="Select end date"
-                      label="End date"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20"
-                    />
-                  </FormControl>
+                  <FormLabel className="text-gray-900 font-medium">End date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 px-3 py-3 h-auto",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
+                          <span className="text-gray-900 font-medium">
+                            {field.value ? format(field.value, "EEEE, MMMM d, yyyy") : "Pick a date"}
+                          </span>
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(date) => date && field.onChange(date)}
+                        disabled={(date) =>
+                          date < form.getValues('startDate')
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </FormItem>
               )}
             />
@@ -317,7 +359,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                   <FormLabel className="text-gray-900 font-medium">Calendar</FormLabel>
                   <FormControl>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 focus:border-[#1a73e8]">
+                      <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto">
                         <SelectValue placeholder="Select a calendar" />
                       </SelectTrigger>
                       <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
@@ -376,7 +418,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                   <FormControl>
                     <Textarea
                       {...field}
-                      className="border border-gray-300 rounded-lg min-h-[80px] placeholder:text-gray-400 resize-none focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 px-3 py-2"
+                      className="border-2 border-gray-300 hover:border-[#1a73e8] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 rounded-lg min-h-[80px] placeholder:text-gray-400 resize-none px-3 py-2"
                       placeholder="Add description..."
                     />
                   </FormControl>
