@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { format, addHours, isBefore, isSameDay, parse, set } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,11 @@ import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Clock, Trash2 } from 'lucide-react';
+import { CalendarIcon, Clock, Trash2, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Event } from '@/types/calendar';
+import { HexColorPicker } from 'react-colorful';
 
 interface Group {
   id: string;
@@ -42,6 +43,8 @@ interface EventFormProps {
 }
 
 export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelete, onCancel }: EventFormProps) {
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  
   const form = useForm<EventFormData>({
     defaultValues: {
       title: editingEvent?.title || '',
@@ -377,13 +380,13 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                       </SelectTrigger>
                       <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
                         {groups.map((group) => (
-                          <SelectItem key={group.id} value={group.id}>
+                          <SelectItem key={group.id} value={group.id} className="hover:bg-gray-50">
                             <div className="flex items-center gap-2">
                               <div 
                                 className="w-3 h-3 rounded-full" 
                                 style={{ backgroundColor: group.color }}
                               />
-                              {group.name}
+                              <span className="text-gray-900">{group.name}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -401,21 +404,59 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-gray-900 font-medium">Event Color</FormLabel>
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    {predefinedColors.map((color) => (
-                      <button
-                        key={color}
+                  <div className="space-y-4">
+                    {/* Predefined Colors */}
+                    <div className="flex flex-wrap gap-3 pt-2">
+                      {predefinedColors.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={cn(
+                            "w-8 h-8 rounded-full transition-all border-2",
+                            field.value === color 
+                              ? "border-gray-400 scale-110" 
+                              : "border-transparent hover:scale-105"
+                          )}
+                          style={{ backgroundColor: color }}
+                          onClick={() => field.onChange(color)}
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Custom Color Picker */}
+                    <div className="space-y-2">
+                      <Button
                         type="button"
-                        className={cn(
-                          "w-8 h-8 rounded-full transition-all border-2",
-                          field.value === color 
-                            ? "border-gray-400 scale-110" 
-                            : "border-transparent hover:scale-105"
-                        )}
-                        style={{ backgroundColor: color }}
-                        onClick={() => field.onChange(color)}
-                      />
-                    ))}
+                        variant="outline"
+                        onClick={() => setShowColorPicker(!showColorPicker)}
+                        className="w-full justify-start border-2 border-gray-300 hover:border-[#1a73e8]"
+                      >
+                        <Palette className="h-4 w-4 mr-2" />
+                        <span>Custom Color</span>
+                        <div 
+                          className="w-4 h-4 rounded-full ml-auto border border-gray-300" 
+                          style={{ backgroundColor: field.value }}
+                        />
+                      </Button>
+                      
+                      {showColorPicker && (
+                        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                          <HexColorPicker 
+                            color={field.value} 
+                            onChange={field.onChange}
+                            style={{ width: '100%', height: '200px' }}
+                          />
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Selected:</span>
+                            <div 
+                              className="w-6 h-6 rounded border border-gray-300" 
+                              style={{ backgroundColor: field.value }}
+                            />
+                            <span className="text-sm font-mono text-gray-700">{field.value}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </FormItem>
               )}

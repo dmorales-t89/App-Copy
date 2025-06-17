@@ -45,11 +45,11 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const [groups] = useState<CalendarGroup[]>([
-    { id: '1', name: 'Work', color: '#3B82F6' },
-    { id: '2', name: 'Personal', color: '#10B981' },
-    { id: '3', name: 'Family', color: '#EF4444' },
-    { id: '4', name: 'Health', color: '#8B5CF6' },
-    { id: '5', name: 'Education', color: '#F59E0B' },
+    { id: '1', name: 'Work', color: '#AEC6CF' }, // Pastel Blue
+    { id: '2', name: 'Personal', color: '#77DD77' }, // Pastel Green
+    { id: '3', name: 'Family', color: '#FF6961' }, // Pastel Red/Coral
+    { id: '4', name: 'Health', color: '#B39EB5' }, // Pastel Purple
+    { id: '5', name: 'Education', color: '#FDFD96' }, // Pastel Yellow
   ]);
   const supabase = createClientComponentClient<Database>();
   const { user } = useAuth();
