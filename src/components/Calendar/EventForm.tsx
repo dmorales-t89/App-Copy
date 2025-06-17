@@ -198,7 +198,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                         }}
                         placeholder="Select start date"
                         label="Start date"
-                        className="border-0 border-b border-gray-300 rounded-none px-0 py-3 hover:bg-transparent focus:border-[#1a73e8]"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20"
                       />
                     </FormControl>
                   </FormItem>
@@ -225,12 +225,13 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                               }
                             }}
                           >
-                            <SelectTrigger className="border-0 border-b border-gray-300 rounded-none px-0 py-3 hover:bg-transparent focus:border-[#1a73e8]">
+                            <SelectTrigger className="border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 focus:border-[#1a73e8]">
+                              <Clock className="h-4 w-4 mr-2 text-gray-500" />
                               <span className="text-gray-900">
                                 {field.value ? getTimeDisplayValue(field.value) : 'Start time'}
                               </span>
                             </SelectTrigger>
-                            <SelectContent className="z-[80] bg-white border border-gray-200 shadow-lg max-h-[200px]">
+                            <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg max-h-[200px]">
                               <ScrollArea className="h-[200px]">
                                 {timeOptions.map((time) => (
                                   <SelectItem key={time.value} value={time.value} className="hover:bg-gray-50 text-gray-900">
@@ -255,12 +256,13 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                             value={field.value}
                             onValueChange={field.onChange}
                           >
-                            <SelectTrigger className="border-0 border-b border-gray-300 rounded-none px-0 py-3 hover:bg-transparent focus:border-[#1a73e8]">
+                            <SelectTrigger className="border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 focus:border-[#1a73e8]">
+                              <Clock className="h-4 w-4 mr-2 text-gray-500" />
                               <span className="text-gray-900">
                                 {field.value ? getTimeDisplayValue(field.value) : 'End time'}
                               </span>
                             </SelectTrigger>
-                            <SelectContent className="z-[80] bg-white border border-gray-200 shadow-lg max-h-[200px]">
+                            <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg max-h-[200px]">
                               <ScrollArea className="h-[200px]">
                                 {timeOptions
                                   .filter(time => {
@@ -299,7 +301,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                       onDateSelect={field.onChange}
                       placeholder="Select end date"
                       label="End date"
-                      className="border-0 border-b border-gray-300 rounded-none px-0 py-3 hover:bg-transparent focus:border-[#1a73e8]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20"
                     />
                   </FormControl>
                 </FormItem>
@@ -312,12 +314,13 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
               name="groupId"
               render={({ field }) => (
                 <FormItem>
+                  <FormLabel className="text-gray-900 font-medium">Calendar</FormLabel>
                   <FormControl>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="border-0 border-b border-gray-300 rounded-none px-0 py-3 hover:bg-transparent focus:border-[#1a73e8]">
+                      <SelectTrigger className="border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 focus:border-[#1a73e8]">
                         <SelectValue placeholder="Select a calendar" />
                       </SelectTrigger>
-                      <SelectContent className="z-[80] bg-white border border-gray-200 shadow-lg">
+                      <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
                         {groups.map((group) => (
                           <SelectItem key={group.id} value={group.id}>
                             <div className="flex items-center gap-2">
@@ -369,10 +372,11 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
               name="description"
               render={({ field }) => (
                 <FormItem>
+                  <FormLabel className="text-gray-900 font-medium">Description</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      className="border-0 border-b border-gray-300 rounded-none min-h-[80px] placeholder:text-gray-400 resize-none focus:border-[#1a73e8] focus:ring-0 px-0 py-3"
+                      className="border border-gray-300 rounded-lg min-h-[80px] placeholder:text-gray-400 resize-none focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 px-3 py-2"
                       placeholder="Add description..."
                     />
                   </FormControl>
