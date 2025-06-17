@@ -197,6 +197,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                           }
                         }}
                         placeholder="Select start date"
+                        label="Start date"
                         className="border-0 border-b border-gray-300 rounded-none px-0 py-3 hover:bg-transparent focus:border-[#1a73e8]"
                       />
                     </FormControl>
@@ -297,6 +298,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                       selectedDate={field.value}
                       onDateSelect={field.onChange}
                       placeholder="Select end date"
+                      label="End date"
                       className="border-0 border-b border-gray-300 rounded-none px-0 py-3 hover:bg-transparent focus:border-[#1a73e8]"
                     />
                   </FormControl>
