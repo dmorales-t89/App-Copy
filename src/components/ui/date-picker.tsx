@@ -86,8 +86,15 @@ export function DatePicker({
             {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : placeholder}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 z-[100]" align="start" side="bottom">
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200">
+        <PopoverContent 
+          className="w-auto p-0 z-[9999]" 
+          align="start" 
+          side="bottom"
+          sideOffset={4}
+          avoidCollisions={true}
+          style={{ zIndex: 9999 }}
+        >
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 relative z-[9999]">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
               <h3 className="text-sm font-medium text-gray-900">
