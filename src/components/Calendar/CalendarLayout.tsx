@@ -179,7 +179,7 @@ export function CalendarLayout({
 
   return (
     <div className="h-screen flex bg-white">
-      {/* Left Sidebar */}
+      {/* Left Sidebar - Google Calendar Style */}
       <AnimatePresence initial={false}>
         {isSidebarOpen && (
           <motion.div
@@ -190,20 +190,20 @@ export function CalendarLayout({
             className="w-[280px] border-r border-gray-200 bg-white overflow-y-auto"
           >
             <div className="p-4 space-y-6">
-              {/* Create Button */}
+              {/* Create Button - Google Calendar Style */}
               <Button
                 onClick={() => {
                   onDateChange(new Date());
                   setEditingEvent(null);
                   setShowEventForm(true);
                 }}
-                className="w-full justify-start bg-[#1a73e8] hover:bg-[#1557b0] text-white rounded-full px-6 py-3 font-medium shadow-md hover:shadow-lg transition-all"
+                className="w-full justify-start bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-full px-6 py-3 font-medium shadow-sm hover:shadow-md transition-all"
               >
-                <Plus className="h-5 w-5 mr-3" />
+                <Plus className="h-5 w-5 mr-3 text-gray-600" />
                 Create
               </Button>
 
-              {/* Mini Calendar */}
+              {/* Mini Calendar - Google Calendar Style */}
               <div className="space-y-4">
                 <MiniCalendar
                   selectedDate={selectedDate}
@@ -219,7 +219,7 @@ export function CalendarLayout({
                     placeholder="Search events"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 border-gray-200 rounded-lg"
+                    className="pl-10 border-gray-200 rounded-lg bg-gray-50 focus:bg-white"
                   />
                 </div>
               </div>
@@ -229,24 +229,29 @@ export function CalendarLayout({
                 <ImageScanButton onEventsExtracted={handleEventsExtracted} />
               </div>
 
-              {/* My Calendars */}
+              {/* My Calendars - Google Calendar Style */}
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-gray-900">My calendars</h3>
-                <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-900 px-1">My calendars</h3>
+                <div className="space-y-1">
                   {groups.map(group => (
-                    <div key={group.id} className="flex items-center space-x-3 py-1">
+                    <div 
+                      key={group.id} 
+                      className="flex items-center space-x-3 py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => toggleGroupVisibility(group.id)}
+                    >
                       <input
                         type="checkbox"
                         checked={group.isVisible}
                         onChange={() => toggleGroupVisibility(group.id)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                        onClick={(e) => e.stopPropagation()}
                       />
-                      <div className="flex items-center space-x-2 flex-1">
+                      <div className="flex items-center space-x-3 flex-1">
                         <div 
                           className="w-3 h-3 rounded-full" 
                           style={{ backgroundColor: group.color }}
                         />
-                        <span className="text-sm text-gray-700 hover:text-gray-900 cursor-pointer">
+                        <span className="text-sm text-gray-700 font-medium">
                           {group.name}
                         </span>
                       </div>
@@ -256,16 +261,14 @@ export function CalendarLayout({
               </div>
 
               {/* Quick Actions */}
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Button
-                    onClick={() => onDateChange(new Date())}
-                    variant="ghost"
-                    className="w-full justify-start text-gray-700 hover:bg-gray-100"
-                  >
-                    Go to Today
-                  </Button>
-                </div>
+              <div className="space-y-2 pt-4 border-t border-gray-200">
+                <Button
+                  onClick={() => onDateChange(new Date())}
+                  variant="ghost"
+                  className="w-full justify-start text-gray-600 hover:bg-gray-50 font-normal"
+                >
+                  Go to Today
+                </Button>
               </div>
             </div>
           </motion.div>
