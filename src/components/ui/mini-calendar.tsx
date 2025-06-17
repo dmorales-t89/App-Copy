@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -33,6 +33,12 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
     onDateSelect(date);
   };
 
+  const handleTodayClick = () => {
+    const today = new Date();
+    setCurrentMonth(today);
+    onDateSelect(today);
+  };
+
   return (
     <div className={cn("bg-white rounded-lg", className)}>
       {/* Header */}
@@ -45,7 +51,7 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
             variant="ghost"
             size="icon"
             onClick={handlePrevMonth}
-            className="h-6 w-6 hover:bg-gray-100"
+            className="h-6 w-6 hover:bg-[#C2EABD]/30"
           >
             <ChevronLeft className="h-3 w-3" />
           </Button>
@@ -53,11 +59,24 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
             variant="ghost"
             size="icon"
             onClick={handleNextMonth}
-            className="h-6 w-6 hover:bg-gray-100"
+            className="h-6 w-6 hover:bg-[#C2EABD]/30"
           >
             <ChevronRight className="h-3 w-3" />
           </Button>
         </div>
+      </div>
+
+      {/* Today Button */}
+      <div className="px-3 pb-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleTodayClick}
+          className="w-full text-xs bg-gradient-to-r from-[#C2EABD]/20 to-[#A3D5FF]/20 hover:from-[#C2EABD]/30 hover:to-[#A3D5FF]/30 text-[#011936] border border-[#C2EABD]/30"
+        >
+          <Calendar className="h-3 w-3 mr-1" />
+          Today
+        </Button>
       </div>
 
       {/* Days of week header */}
@@ -84,7 +103,7 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
               key={day.toString()}
               onClick={() => handleDateClick(day)}
               className={cn(
-                "h-6 w-6 text-xs flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors",
+                "h-6 w-6 text-xs flex items-center justify-center rounded-full hover:bg-[#C2EABD]/30 transition-colors",
                 !isCurrentMonth && "text-gray-300",
                 isCurrentMonth && "text-gray-900",
                 // Today gets light blue background, always takes priority

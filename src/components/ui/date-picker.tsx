@@ -87,17 +87,17 @@ export function DatePicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-auto p-0 z-[9999]" 
+          className="w-auto p-0 z-[9999] bg-white/95 backdrop-blur-sm border-[#C2EABD]/50 overflow-visible" 
           align="start" 
           side="bottom"
           sideOffset={4}
           avoidCollisions={true}
           style={{ zIndex: 9999 }}
         >
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 relative z-[9999]">
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-[#C2EABD]/50 relative z-[9999]">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              <h3 className="text-sm font-medium text-gray-900">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#C2EABD]/30 bg-gradient-to-r from-[#C2EABD]/10 to-[#A3D5FF]/10">
+              <h3 className="text-sm font-medium text-[#011936]">
                 {format(currentMonth, 'MMMM yyyy')}
               </h3>
               <div className="flex items-center space-x-1">
@@ -105,7 +105,7 @@ export function DatePicker({
                   variant="ghost"
                   size="icon"
                   onClick={handlePrevMonth}
-                  className="h-8 w-8 hover:bg-gray-100"
+                  className="h-8 w-8 hover:bg-[#C2EABD]/30"
                   type="button"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -114,7 +114,7 @@ export function DatePicker({
                   variant="ghost"
                   size="icon"
                   onClick={handleNextMonth}
-                  className="h-8 w-8 hover:bg-gray-100"
+                  className="h-8 w-8 hover:bg-[#C2EABD]/30"
                   type="button"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -123,11 +123,11 @@ export function DatePicker({
             </div>
 
             {/* Days of week header */}
-            <div className="grid grid-cols-7 gap-0 px-4 py-2 bg-gray-50">
+            <div className="grid grid-cols-7 gap-0 px-4 py-2 bg-gradient-to-r from-[#C2EABD]/5 to-[#A3D5FF]/5">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
                 <div
                   key={index}
-                  className="h-8 flex items-center justify-center text-xs font-medium text-gray-600"
+                  className="h-8 flex items-center justify-center text-xs font-medium text-[#011936]/70"
                 >
                   {day}
                 </div>
@@ -147,7 +147,7 @@ export function DatePicker({
                     type="button"
                     onClick={() => handleDateClick(day)}
                     className={cn(
-                      "h-8 w-8 text-sm flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors",
+                      "h-8 w-8 text-sm flex items-center justify-center rounded-full hover:bg-[#C2EABD]/30 transition-colors",
                       !isCurrentMonth && "text-gray-300",
                       isCurrentMonth && "text-gray-900",
                       // Today gets light blue background, always takes priority
@@ -163,12 +163,12 @@ export function DatePicker({
             </div>
 
             {/* Footer with Today button */}
-            <div className="border-t border-gray-200 px-4 py-3">
+            <div className="border-t border-[#C2EABD]/30 px-4 py-3 bg-gradient-to-r from-[#C2EABD]/5 to-[#A3D5FF]/5">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleTodayClick}
-                className="w-full text-[#1a73e8] hover:bg-blue-50"
+                className="w-full text-[#011936] hover:bg-[#C2EABD]/20 border border-[#C2EABD]/30"
                 type="button"
               >
                 Today

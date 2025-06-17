@@ -51,7 +51,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
       isAllDay: !editingEvent?.startTime,
       startTime: editingEvent?.startTime ? format(new Date(`2000-01-01T${editingEvent.startTime}`), 'HH:mm') : format(initialDate, 'HH:mm'),
       endTime: editingEvent?.endTime ? format(new Date(`2000-01-01T${editingEvent.endTime}`), 'HH:mm') : format(addHours(initialDate, 1), 'HH:mm'),
-      color: editingEvent?.color || groups[0]?.color || '#3B82F6',
+      color: editingEvent?.color || groups[0]?.color || '#AEC6CF',
       groupId: editingEvent?.groupId || groups[0]?.id || '1',
     },
   });
@@ -67,7 +67,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
         isAllDay: !editingEvent.startTime,
         startTime: editingEvent.startTime ? format(new Date(`2000-01-01T${editingEvent.startTime}`), 'HH:mm') : '09:00',
         endTime: editingEvent.endTime ? format(new Date(`2000-01-01T${editingEvent.endTime}`), 'HH:mm') : '10:00',
-        color: editingEvent.color || groups[0]?.color || '#3B82F6',
+        color: editingEvent.color || groups[0]?.color || '#AEC6CF',
         groupId: editingEvent.groupId || groups[0]?.id || '1',
       });
     } else {
@@ -79,7 +79,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
         isAllDay: false,
         startTime: format(initialDate, 'HH:mm'),
         endTime: format(addHours(initialDate, 1), 'HH:mm'),
-        color: groups[0]?.color || '#3B82F6',
+        color: groups[0]?.color || '#AEC6CF',
         groupId: groups[0]?.id || '1',
       });
     }
@@ -101,14 +101,14 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
   const timeOptions = generateTimeOptions();
 
   const predefinedColors = [
-    '#3B82F6', // Blue
-    '#10B981', // Green
-    '#EF4444', // Red
-    '#8B5CF6', // Purple
-    '#F59E0B', // Yellow
-    '#EC4899', // Pink
-    '#06B6D4', // Cyan
-    '#84CC16', // Lime
+    '#AEC6CF', // Pastel Blue
+    '#77DD77', // Pastel Green
+    '#FF6961', // Pastel Red/Coral
+    '#B39EB5', // Pastel Purple
+    '#FDFD96', // Pastel Yellow
+    '#FFB347', // Pastel Orange
+    '#CFCFC4', // Pastel Grey
+    '#F49AC2', // Pastel Pink
   ];
 
   const handleSubmit = form.handleSubmit((data) => {
@@ -139,6 +139,9 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
     const option = timeOptions.find(opt => opt.value === timeValue);
     return option ? option.label : timeValue;
   };
+
+  // Get the selected group for display
+  const selectedGroup = groups.find(group => group.id === form.watch('groupId'));
 
   return (
     <div className="max-w-full overflow-hidden">
@@ -360,7 +363,17 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                   <FormControl>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto">
-                        <SelectValue placeholder="Select a calendar" />
+                        {selectedGroup ? (
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: selectedGroup.color }}
+                            />
+                            <span className="text-gray-900 font-medium">{selectedGroup.name}</span>
+                          </div>
+                        ) : (
+                          <SelectValue placeholder="Select a calendar" />
+                        )}
                       </SelectTrigger>
                       <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
                         {groups.map((group) => (

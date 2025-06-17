@@ -27,7 +27,7 @@ function Calendar({
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-[#C2EABD] text-[#011936]"
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-[#C2EABD] text-[#011936] hover:bg-[#C2EABD]/30"
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
@@ -37,7 +37,7 @@ function Calendar({
         row: "flex w-full mt-2",
         cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
         day: cn(
-          "h-8 w-8 p-0 font-normal aria-selected:opacity-100 text-[#011936] rounded-md hover:bg-gray-100 hover:text-[#011936] transition-colors focus:bg-gray-100 focus:text-[#011936] focus:outline-none"
+          "h-8 w-8 p-0 font-normal aria-selected:opacity-100 text-[#011936] rounded-md hover:bg-[#C2EABD]/30 hover:text-[#011936] transition-colors focus:bg-[#C2EABD]/30 focus:text-[#011936] focus:outline-none"
         ),
         day_range_end: "day-range-end",
         day_selected: "bg-[#C2EABD] text-[#011936] hover:bg-[#A3D5FF] hover:text-[#011936] focus:bg-[#C2EABD] focus:text-[#011936]",
