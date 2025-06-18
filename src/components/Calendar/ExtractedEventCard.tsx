@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Calendar, Clock, MapPin, FileText, Check, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, FileText, Check, X, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { HexColorPicker } from 'react-colorful';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ExtractedEvent {
   title: string;
@@ -130,6 +132,7 @@ export function ExtractedEventCard({
   const [endTime, setEndTime] = useState(initialEndTime);
   const [selectedGroupId, setSelectedGroupId] = useState(groups[0]?.id || '1');
   const [selectedColor, setSelectedColor] = useState(groups[0]?.color || '#AEC6CF');
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   const predefinedColors = [
     '#AEC6CF', // Pastel Blue
@@ -190,6 +193,16 @@ export function ExtractedEventCard({
     }
   };
 
+  // Get display value for time selects
+  const getTimeDisplayValue = (timeValue: string) => {
+    if (!timeValue) return '';
+    const option = timeOptions.find(opt => opt.value === timeValue);
+    return option ? option.label : timeValue;
+  };
+
+  // Get selected group for display
+  const selectedGroup = groups.find(group => group.id === selectedGroupId);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -231,7 +244,7 @@ export function ExtractedEventCard({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter event title"
-              className="border-gray-300"
+              className="border-gray-300 focus:border-[#1a73e8] focus:ring-[#1a73e8]"
             />
           </div>
 
@@ -240,16 +253,16 @@ export function ExtractedEventCard({
             <label className="text-sm font-medium text-gray-700 mb-1 block">
               Date
             </label>
-            <div className="flex items-center space-x-2 p-2 border border-gray-300 rounded-md bg-gray-50">
+            <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-gray-50">
               <Calendar className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-gray-700 font-medium">
                 {format(selectedDate, 'EEEE, MMMM d, yyyy')}
               </span>
             </div>
           </div>
 
           {/* All Day Toggle */}
-          <div className="flex items-center justify-between p-2 border border-gray-300 rounded-md">
+          <div className="flex items-center justify-between p-3 border border-gray-300 rounded-md bg-gray-50">
             <span className="text-sm font-medium text-gray-700">All day</span>
             <Switch
               checked={isAllDay}
@@ -266,16 +279,26 @@ export function ExtractedEventCard({
                   Start Time
                 </label>
                 <Select value={startTime} onValueChange={setStartTime}>
-                  <SelectTrigger className="border-gray-300">
-                    <Clock className="h-4 w-4 mr-2" />
-                    <SelectValue />
+                  <SelectTrigger className="border-gray-300 focus:border-[#1a73e8] h-auto py-3">
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-gray-900 font-medium">
+                        {getTimeDisplayValue(startTime) || 'Select time'}
+                      </span>
+                    </div>
                   </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
-                    {timeOptions.map((time) => (
-                      <SelectItem key={time.value} value={time.value}>
-                        {time.label}
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="max-h-[200px] z-[9999] bg-white border border-gray-200 shadow-lg">
+                    <ScrollArea className="h-[200px]">
+                      {timeOptions.map((time) => (
+                        <SelectItem 
+                          key={time.value} 
+                          value={time.value} 
+                          className="hover:bg-gray-50 text-gray-900 cursor-pointer"
+                        >
+                          {time.label}
+                        </SelectItem>
+                      ))}
+                    </ScrollArea>
                   </SelectContent>
                 </Select>
               </div>
@@ -284,22 +307,32 @@ export function ExtractedEventCard({
                   End Time
                 </label>
                 <Select value={endTime} onValueChange={setEndTime}>
-                  <SelectTrigger className="border-gray-300">
-                    <Clock className="h-4 w-4 mr-2" />
-                    <SelectValue />
+                  <SelectTrigger className="border-gray-300 focus:border-[#1a73e8] h-auto py-3">
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-gray-900 font-medium">
+                        {getTimeDisplayValue(endTime) || 'Select time'}
+                      </span>
+                    </div>
                   </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
-                    {timeOptions
-                      .filter(time => {
-                        const startTimeDate = new Date(`2000-01-01T${startTime}`);
-                        const currentTimeDate = new Date(`2000-01-01T${time.value}`);
-                        return currentTimeDate > startTimeDate;
-                      })
-                      .map((time) => (
-                        <SelectItem key={time.value} value={time.value}>
-                          {time.label}
-                        </SelectItem>
-                      ))}
+                  <SelectContent className="max-h-[200px] z-[9999] bg-white border border-gray-200 shadow-lg">
+                    <ScrollArea className="h-[200px]">
+                      {timeOptions
+                        .filter(time => {
+                          const startTimeDate = new Date(`2000-01-01T${startTime}`);
+                          const currentTimeDate = new Date(`2000-01-01T${time.value}`);
+                          return currentTimeDate > startTimeDate;
+                        })
+                        .map((time) => (
+                          <SelectItem 
+                            key={time.value} 
+                            value={time.value} 
+                            className="hover:bg-gray-50 text-gray-900 cursor-pointer"
+                          >
+                            {time.label}
+                          </SelectItem>
+                        ))}
+                    </ScrollArea>
                   </SelectContent>
                 </Select>
               </div>
@@ -312,18 +345,32 @@ export function ExtractedEventCard({
               Calendar
             </label>
             <Select value={selectedGroupId} onValueChange={handleGroupChange}>
-              <SelectTrigger className="border-gray-300">
-                <SelectValue />
+              <SelectTrigger className="border-gray-300 focus:border-[#1a73e8] h-auto py-3">
+                {selectedGroup ? (
+                  <div className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: selectedGroup.color }}
+                    />
+                    <span className="text-gray-900 font-medium">{selectedGroup.name}</span>
+                  </div>
+                ) : (
+                  <SelectValue placeholder="Select a calendar" />
+                )}
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
                 {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
+                  <SelectItem 
+                    key={group.id} 
+                    value={group.id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                  >
                     <div className="flex items-center space-x-2">
                       <div 
                         className="w-3 h-3 rounded-full" 
                         style={{ backgroundColor: group.color }}
                       />
-                      <span>{group.name}</span>
+                      <span className="text-gray-900">{group.name}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -336,19 +383,58 @@ export function ExtractedEventCard({
             <label className="text-sm font-medium text-gray-700 mb-1 block">
               Color
             </label>
-            <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-md">
-              {predefinedColors.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className={cn(
-                    "w-6 h-6 rounded-full transition-all",
-                    selectedColor === color && "ring-2 ring-offset-2 ring-gray-400"
-                  )}
-                  style={{ backgroundColor: color }}
-                  onClick={() => setSelectedColor(color)}
+            <div className="space-y-3">
+              {/* Predefined Colors */}
+              <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-md bg-gray-50">
+                {predefinedColors.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={cn(
+                      "w-6 h-6 rounded-full transition-all border-2",
+                      selectedColor === color 
+                        ? "border-gray-600 scale-110 shadow-md" 
+                        : "border-gray-300 hover:scale-105 hover:border-gray-400"
+                    )}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setSelectedColor(color)}
+                  />
+                ))}
+              </div>
+              
+              {/* Custom Color Picker Toggle */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowColorPicker(!showColorPicker)}
+                className="w-full justify-start border-gray-300 hover:border-[#1a73e8] h-auto py-3"
+              >
+                <Palette className="h-4 w-4 mr-2" />
+                <span className="text-gray-900">Custom Color</span>
+                <div 
+                  className="w-4 h-4 rounded-full ml-auto border border-gray-300" 
+                  style={{ backgroundColor: selectedColor }}
                 />
-              ))}
+              </Button>
+              
+              {/* Color Picker */}
+              {showColorPicker && (
+                <div className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
+                  <HexColorPicker 
+                    color={selectedColor} 
+                    onChange={setSelectedColor}
+                    style={{ width: '100%', height: '150px' }}
+                  />
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Selected:</span>
+                    <div 
+                      className="w-6 h-6 rounded border border-gray-300" 
+                      style={{ backgroundColor: selectedColor }}
+                    />
+                    <span className="text-sm font-mono text-gray-700">{selectedColor}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -361,7 +447,7 @@ export function ExtractedEventCard({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add description..."
-              className="border-gray-300 resize-none"
+              className="border-gray-300 focus:border-[#1a73e8] focus:ring-[#1a73e8] resize-none"
               rows={3}
             />
           </div>
@@ -379,7 +465,7 @@ export function ExtractedEventCard({
           <Button
             onClick={handleConfirm}
             disabled={!title.trim()}
-            className="bg-[#1a73e8] text-white hover:bg-[#1557b0]"
+            className="bg-[#1a73e8] text-white hover:bg-[#1557b0] disabled:opacity-50"
           >
             <Check className="h-4 w-4 mr-2" />
             Add to Calendar
