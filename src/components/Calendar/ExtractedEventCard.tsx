@@ -17,7 +17,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface ExtractedEvent {
   title: string;
   date: Date;
-  time?: string;
+  startTime?: string;
+  endTime?: string;
   description?: string;
 }
 
@@ -126,7 +127,7 @@ const generateEventTitle = (event: ExtractedEvent): string => {
   
   // Generate based on date and time
   const dateStr = format(event.date, 'MMM d');
-  const timeStr = event.time ? ` at ${event.time}` : '';
+  const timeStr = event.startTime ? ` at ${event.startTime}` : '';
   return `Event on ${dateStr}${timeStr}`;
 };
 
@@ -140,11 +141,11 @@ export function ExtractedEventCard({
   const [title, setTitle] = useState(generateEventTitle(event));
   const [description, setDescription] = useState(event.description || '');
   const [selectedDate, setSelectedDate] = useState(event.date);
-  const [isAllDay, setIsAllDay] = useState(!event.time);
+  const [isAllDay, setIsAllDay] = useState(!event.startTime);
   
-  // Safely parse the initial time values
-  const initialStartTime = event.time ? parseTimeString(event.time) || '09:00' : '09:00';
-  const initialEndTime = event.time ? safeAddHours(event.time, 1) : '10:00';
+  // Safely parse the initial time values using startTime and endTime
+  const initialStartTime = event.startTime ? parseTimeString(event.startTime) || '09:00' : '09:00';
+  const initialEndTime = event.endTime ? parseTimeString(event.endTime) || safeAddHours(event.startTime || '09:00', 1) : safeAddHours(event.startTime || '09:00', 1);
   
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialEndTime);
@@ -411,7 +412,7 @@ export function ExtractedEventCard({
           {/* Color Selection */}
           <div>
             <label className="text-sm font-medium text-[#011936] mb-1 block">
-              Color
+              Choose Color
             </label>
             <div className="space-y-3">
               {/* Predefined Colors */}
@@ -440,7 +441,7 @@ export function ExtractedEventCard({
                 className="w-full justify-start border-2 border-gray-300 hover:border-[#1a73e8] h-auto py-3"
               >
                 <Palette className="h-4 w-4 mr-2" />
-                <span className="text-[#011936]">Custom Color</span>
+                <span className="text-[#011936] font-medium">Custom Color</span>
                 <div 
                   className="w-4 h-4 rounded-full ml-auto border border-gray-300" 
                   style={{ backgroundColor: selectedColor }}
@@ -456,12 +457,12 @@ export function ExtractedEventCard({
                     style={{ width: '100%', height: '150px' }}
                   />
                   <div className="mt-3 flex items-center gap-2">
-                    <span className="text-sm text-[#011936]">Selected:</span>
+                    <span className="text-sm text-[#011936] font-medium">Selected:</span>
                     <div 
                       className="w-6 h-6 rounded border border-gray-300" 
                       style={{ backgroundColor: selectedColor }}
                     />
-                    <span className="text-sm font-mono text-[#011936]">{selectedColor}</span>
+                    <span className="text-sm font-mono text-[#011936] font-medium">{selectedColor}</span>
                   </div>
                 </div>
               )}
