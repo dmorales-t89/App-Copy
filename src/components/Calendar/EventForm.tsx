@@ -44,6 +44,7 @@ interface EventFormProps {
 
 export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelete, onCancel }: EventFormProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [customColors, setCustomColors] = useState<string[]>([]);
   
   const form = useForm<EventFormData>({
     defaultValues: {
@@ -146,6 +147,18 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
   // Get the selected group for display
   const selectedGroup = groups.find(group => group.id === form.watch('groupId'));
 
+  // Handle custom color change and save to palette
+  const handleCustomColorChange = (color: string) => {
+    form.setValue('color', color);
+    // Add to custom colors if not already present
+    if (!customColors.includes(color) && !predefinedColors.includes(color)) {
+      setCustomColors(prev => [...prev, color].slice(-3)); // Keep only last 3 custom colors
+    }
+  };
+
+  // Combine predefined and custom colors
+  const allColors = [...predefinedColors, ...customColors];
+
   return (
     <div className="max-w-full overflow-hidden">
       <Form {...form}>
@@ -158,7 +171,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                 <FormControl>
                   <Input 
                     {...field} 
-                    className="border-0 border-b border-gray-300 rounded-none text-xl font-medium placeholder:text-gray-400 focus:border-[#1a73e8] focus:ring-0 px-0 py-3" 
+                    className="border-0 border-b-2 border-gray-300 rounded-none text-xl font-medium placeholder:text-gray-400 focus:border-[#1a73e8] focus:ring-0 px-0 py-3" 
                     placeholder="Add title"
                   />
                 </FormControl>
@@ -407,7 +420,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                   <div className="space-y-4">
                     {/* Predefined Colors */}
                     <div className="flex flex-wrap gap-3 pt-2">
-                      {predefinedColors.map((color) => (
+                      {allColors.map((color) => (
                         <button
                           key={color}
                           type="button"
@@ -440,10 +453,10 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                       </Button>
                       
                       {showColorPicker && (
-                        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div className="p-4 border-2 border-gray-200 rounded-lg bg-gray-50">
                           <HexColorPicker 
                             color={field.value} 
-                            onChange={field.onChange}
+                            onChange={handleCustomColorChange}
                             style={{ width: '100%', height: '200px' }}
                           />
                           <div className="mt-3 flex items-center gap-2">
@@ -488,7 +501,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                   type="button"
                   variant="ghost"
                   onClick={onDelete}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-2 border-transparent hover:border-red-200"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
@@ -500,13 +513,13 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                 type="button"
                 variant="ghost"
                 onClick={onCancel}
-                className="text-gray-700 hover:bg-gray-100"
+                className="text-gray-700 hover:bg-gray-100 border-2 border-gray-300 hover:border-gray-400"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="bg-[#1a73e8] text-white hover:bg-[#1557b0] px-6"
+                className="bg-[#1a73e8] text-white hover:bg-[#1557b0] px-6 border-2 border-[#1a73e8] hover:border-[#1557b0]"
               >
                 Save
               </Button>
