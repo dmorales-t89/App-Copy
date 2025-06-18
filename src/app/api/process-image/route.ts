@@ -25,18 +25,23 @@ Return your response as a JSON array of events in this exact format:
 ]
 
 IMPORTANT INSTRUCTIONS:
-- Extract the actual event title/name, not just time information
-- "start_time" should be the beginning time of the event
-- "end_time" should be the ending time of the event
-- Do NOT put time information in the title field
-- If you see a time range like "2:00 PM-7:30 PM", put "2:00 PM" in start_time and "7:30 PM" in end_time
-- If only one time is shown, put it in start_time and leave end_time empty
-- Use 12-hour format with AM/PM for times
-- If no specific event title is visible, create a descriptive title based on the context
-- If the image contains time information (start or end), do not treat the event as all-day. All-day should only apply to events with no time info.
+- Extract the actual event title/name, not just time information.
+- "date" must be the actual date of the event in YYYY-MM-DD format.
+  → Always convert formats like "June 8", "Sat, 6/8", or "08/06" to YYYY-MM-DD.
+  → If the year is missing, choose the closest valid date (past or future) that matches the month and day.
+- "start_time" should be the beginning time of the event.
+- "end_time" should be the ending time of the event.
+- Do NOT include time information in the title field.
+- If a time range is shown (e.g., "2:00 PM - 7:30 PM"), split it into start_time and end_time.
+- If only one time is shown, use it as start_time and leave end_time empty.
+- Use 12-hour format with AM/PM for all times.
+- If no event title is visible, generate a descriptive one from context (e.g., "Team Meeting").
+- If the image contains time information (start or end), do NOT treat the event as all-day. All-day should only apply to events with no time info.
 
-If you find multiple events, include them all in the array. If no events are found, return an empty array [].
-Only return valid JSON - no additional text or explanations.`;
+If multiple events are found, include them all in the array.
+If no events are found, return an empty array [].
+Return only valid JSON — no text, explanation, or formatting around it.`;
+
 
 async function testNetworkConnectivity(): Promise<{ success: boolean; error?: string }> {
   try {
