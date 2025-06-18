@@ -11,7 +11,7 @@ interface CalendarEvent {
 
 export const dynamic = 'force-dynamic';
 
-const LLM_PROMPT = `IGNORE week range headers like "June 08 - 14" when a specific day like "Mon 9" is clearly labeled. Analyze this image and extract any calendar events, appointments, or scheduled activities you can find. Look for dates, times, event titles, locations, and descriptions. 
+const LLM_PROMPT = `Analyze this image and extract any calendar events, appointments, or scheduled activities you can find. Look for dates, times, event titles, locations, and descriptions.
 
 Return your response as a JSON array of events in this exact format:
 [
@@ -24,30 +24,22 @@ Return your response as a JSON array of events in this exact format:
   }
 ]
 
-CRITICAL DATE EXTRACTION RULES:
-- When you see a specific day format like "Mon 9", "Wed 11", "Thu 12", "Sat 14", prioritize these EXACT day-of-week and day-number combinations.
-- Use the month/year context (like "June 2025") to determine the correct date.
-- For "Mon 9" in June 2025, the date should be 2025-06-09 (the Monday that falls on the 9th).
-- For "Wed 11" in June 2025, the date should be 2025-06-11 (the Wednesday that falls on the 11th).
-- IGNORE week range headers like "June 08 - 14" when a specific day is clearly labeled.
-- Always verify that the day of the week matches the date number in the given month/year.
-
-TIME EXTRACTION RULES:
+IMPORTANT INSTRUCTIONS:
 - Extract the actual event title/name, not just time information.
-- "start_time" should be the beginning time of the event.
-- "end_time" should be the ending time of the event.
-- If a time range is shown (e.g., "2:00 PM-7:30 PM"), split it into start_time and end_time.
-- If only one time is shown, use it as start_time and calculate end_time as +1 hour.
+- "date" must be the event’s actual day in YYYY-MM-DD format. Always convert text like “Mon 9”, “Tuesday 11”, “6/8”, or “June 12” to a proper date.
+- If the year is missing, assume the closest valid date (past or future) that matches the month and day.
+- Prefer specific weekday-based formats like "Mon 9" or "Tues 11" over vague ranges like "June 8–14".
+  → Only use broad ranges like "June 8–14" if there are no more specific weekday/day pairings provided.
+- If a time range is shown (e.g., "2:00 PM - 7:30 PM"), split it into start_time and end_time.
+- If only one time is shown, use it as start_time and leave end_time empty.
+- Do NOT place time information in the title.
 - Use 12-hour format with AM/PM for all times.
-- If no event title is visible, generate a descriptive one from context.
-
-EXAMPLES:
-- "Mon 9" with "2:00 PM-7:30 PM" in June 2025 → date: "2025-06-09", start_time: "2:00 PM", end_time: "7:30 PM"
-- "Wed 11" with "7:30 AM-2:30 PM" in June 2025 → date: "2025-06-11", start_time: "7:30 AM", end_time: "2:30 PM"
+- If no clear title is shown, generate a descriptive one from nearby context (e.g., "Practice Session" or "Team Meeting").
+- If the event shows a time, do NOT treat it as all-day. All-day only applies to events with no times listed.
 
 If multiple events are found, include them all in the array.
 If no events are found, return an empty array [].
-Return only valid JSON — no text, explanation, or formatting around it.`;
+Only return valid JSON — no text, explanation, or markdown formatting.`;
 
 async function testNetworkConnectivity(): Promise<{ success: boolean; error?: string }> {
   try {
