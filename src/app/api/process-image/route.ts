@@ -11,7 +11,7 @@ interface CalendarEvent {
 
 export const dynamic = 'force-dynamic';
 
-const LLM_PROMPT = `Analyze this image and extract any calendar events, appointments, or scheduled activities you can find. Look for dates, times, event titles, locations, and descriptions.
+const LLM_PROMPT = `Analyze this image and extract any calendar events, appointments, or scheduled activities you can find. Look for dates, times, event titles, locations, and descriptions. IGNORE week range headers like "June 08 - 14" when a specific day like "Mon 9" is clearly labeled.
 
 Return your response as a JSON array of events in this exact format:
 [
