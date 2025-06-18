@@ -32,7 +32,7 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
   return (
     <div className="h-full flex flex-col">
       {/* Week day headers */}
-      <div className="grid grid-cols-7 border-b border-gray-550"> {/*Editeddddddddddd was 200 */}
+      <div className="grid grid-cols-7 border-b border-gray-200"> {/*Editeddddddddddd was 200 */}
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div
             key={day}
