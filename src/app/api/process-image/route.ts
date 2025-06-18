@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 interface CalendarEvent {
   title: string;
   date: string;
-  time?: string;
+  startTime?: string;
+  endTime?: string;
   description?: string;
   isValidDate: boolean;
 }
@@ -17,10 +18,21 @@ Return your response as a JSON array of events in this exact format:
   {
     "title": "Event title",
     "date": "YYYY-MM-DD",
-    "time": "HH:MM AM/PM",
+    "start_time": "HH:MM AM/PM",
+    "end_time": "HH:MM AM/PM",
     "description": "Event description or location"
   }
 ]
+
+IMPORTANT INSTRUCTIONS:
+- Extract the actual event title/name, not just time information
+- "start_time" should be the beginning time of the event
+- "end_time" should be the ending time of the event
+- Do NOT put time information in the title field
+- If you see a time range like "2:00 PM-7:30 PM", put "2:00 PM" in start_time and "7:30 PM" in end_time
+- If only one time is shown, put it in start_time and leave end_time empty
+- Use 12-hour format with AM/PM for times
+- If no specific event title is visible, create a descriptive title based on the context
 
 If you find multiple events, include them all in the array. If no events are found, return an empty array [].
 Only return valid JSON - no additional text or explanations.`;
@@ -231,10 +243,30 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
     // Map and validate each event
     return events.map((event: any) => {
       const parsedDate = parseDate(event.date);
+      
+      // Parse start and end times
+      let startTime = event.start_time || event.startTime;
+      let endTime = event.end_time || event.endTime;
+      
+      // If we have a start time but no end time, default to +1 hour
+      if (startTime && !endTime) {
+        try {
+          const startDate = new Date(`2000-01-01T${convertTo24Hour(startTime)}`);
+          if (!isNaN(startDate.getTime())) {
+            const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Add 1 hour
+            endTime = format12Hour(endDate);
+          }
+        } catch (error) {
+          console.warn('Failed to calculate end time:', error);
+          endTime = undefined;
+        }
+      }
+      
       return {
         title: event.title || 'Untitled Event',
         date: parsedDate ? parsedDate.toISOString() : event.date,
-        time: event.time,
+        startTime: startTime,
+        endTime: endTime,
         description: event.description,
         isValidDate: parsedDate !== null
       };
@@ -251,6 +283,39 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
       description: truncateText(llmResponse),
       isValidDate: true
     }];
+  }
+}
+
+function convertTo24Hour(time12: string): string {
+  try {
+    const time = time12.trim().toLowerCase();
+    const [timePart, period] = time.split(/\s*(am|pm)\s*/);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    
+    let hour24 = hours;
+    if (period === 'pm' && hours !== 12) {
+      hour24 += 12;
+    } else if (period === 'am' && hours === 12) {
+      hour24 = 0;
+    }
+    
+    return `${hour24.toString().padStart(2, '0')}:${(minutes || 0).toString().padStart(2, '0')}`;
+  } catch (error) {
+    console.warn('Failed to convert time to 24-hour format:', time12, error);
+    return time12;
+  }
+}
+
+function format12Hour(date: Date): string {
+  try {
+    return date.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit', 
+      hour12: true 
+    });
+  } catch (error) {
+    console.warn('Failed to format time to 12-hour format:', error);
+    return '';
   }
 }
 

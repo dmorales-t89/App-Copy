@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2Icon } from 'lucide-react';
+import { Loader2Icon, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function Header() {
   const { user, loading, signOut } = useAuth();
@@ -80,16 +81,31 @@ export default function Header() {
               <Loader2Icon className="w-5 h-5 animate-spin text-[#C2EABD]" />
             ) : user ? (
               <div className="flex items-center gap-4">
+                {/* Settings Button with Logout */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-[#C2EABD] hover:bg-[#C2EABD]/10"
+                    >
+                      <Settings className="h-5 w-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-2" align="end">
+                    <Button
+                      variant="ghost"
+                      onClick={handleSignOut}
+                      className="w-full justify-start text-[#011936] hover:bg-gray-100"
+                    >
+                      Log out
+                    </Button>
+                  </PopoverContent>
+                </Popover>
+                
                 <span className="text-[#C2EABD]/80 text-sm">
                   Welcome, {user.email?.split('@')[0]}
                 </span>
-                <Button 
-                  onClick={handleSignOut}
-                  variant="ghost" 
-                  className="text-[#C2EABD] hover:bg-[#C2EABD]/10"
-                >
-                  Sign Out
-                </Button>
               </div>
             ) : (
               <>

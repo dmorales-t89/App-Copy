@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { format, addMonths, subMonths, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Plus, X, Loader2, Search, Menu } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Loader2, Search, Menu, Settings } from 'lucide-react';
 import { CalendarView } from './CalendarView';
 import { WeekView } from './WeekView';
 import { EventForm } from './EventForm';
@@ -14,6 +14,9 @@ import { cn } from '@/lib/utils';
 import { MiniCalendar } from '@/components/ui/mini-calendar';
 import { Input } from '@/components/ui/input';
 import { Event } from '@/types/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface Group {
   id: string;
@@ -37,7 +40,8 @@ interface EventFormData {
 interface ExtractedEvent {
   title: string;
   date: Date;
-  time?: string;
+  startTime?: string;
+  endTime?: string;
   description?: string;
 }
 
@@ -74,6 +78,9 @@ export function CalendarLayout({
   // New state for extracted events
   const [extractedEvents, setExtractedEvents] = useState<ExtractedEvent[]>([]);
   const [showExtractedEventsSidebar, setShowExtractedEventsSidebar] = useState(false);
+
+  const { signOut } = useAuth();
+  const router = useRouter();
 
   const handleDayClick = (date: Date) => {
     onDateChange(date);
@@ -151,10 +158,10 @@ export function CalendarLayout({
         description: event.description || '',
         startDate: event.date,
         endDate: event.date,
-        isAllDay: !event.time,
-        startTime: event.time || '09:00',
-        endTime: event.time ? format(new Date(`2000-01-01T${event.time}`).getTime() + 60 * 60 * 1000, 'HH:mm') : '10:00',
-        color: groups[0]?.color || '#3B82F6',
+        isAllDay: !event.startTime,
+        startTime: event.startTime || '09:00',
+        endTime: event.endTime || (event.startTime ? format(new Date(`2000-01-01T${event.startTime}`).getTime() + 60 * 60 * 1000, 'HH:mm') : '10:00'),
+        color: groups[0]?.color || '#AEC6CF',
         groupId: groups[0]?.id || '1',
       };
       
@@ -168,6 +175,11 @@ export function CalendarLayout({
   const handleDiscardAllExtractedEvents = () => {
     setExtractedEvents([]);
     setShowExtractedEventsSidebar(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/');
   };
 
   const filteredEvents = events.filter(event => {
@@ -187,7 +199,7 @@ export function CalendarLayout({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -280, opacity: 0 }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="w-[280px] border-r border-gray-200 bg-white overflow-y-auto"
+            className="w-[280px] border-r border-gray-200 bg-gray-50 overflow-y-auto"
           >
             <div className="p-4 space-y-6">
               {/* Create Button - Google Calendar Style */}
@@ -236,7 +248,7 @@ export function CalendarLayout({
                   {groups.map(group => (
                     <div 
                       key={group.id} 
-                      className="flex items-center space-x-3 py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="flex items-center space-x-3 py-2 px-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                       onClick={() => toggleGroupVisibility(group.id)}
                     >
                       <input
@@ -265,7 +277,7 @@ export function CalendarLayout({
                 <Button
                   onClick={() => onDateChange(new Date())}
                   variant="ghost"
-                  className="w-full justify-start text-gray-600 hover:bg-gray-50 font-normal"
+                  className="w-full justify-start text-gray-600 hover:bg-gray-100 font-normal"
                 >
                   Go to Today
                 </Button>
@@ -283,6 +295,28 @@ export function CalendarLayout({
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
           <div className="flex items-center gap-4">
+            {/* Settings Button */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-gray-100 text-gray-600"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2" align="start">
+                <Button
+                  variant="ghost"
+                  onClick={handleSignOut}
+                  className="w-full justify-start text-gray-700 hover:bg-gray-100"
+                >
+                  Log out
+                </Button>
+              </PopoverContent>
+            </Popover>
+
             <Button
               variant="ghost"
               size="icon"
@@ -389,7 +423,7 @@ export function CalendarLayout({
             animate={{ x: 0 }}
             exit={{ x: 400 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 h-full w-[400px] bg-white shadow-lg border-l border-gray-200 overflow-y-auto z-50"
+            className="fixed top-0 right-0 h-full w-[400px] bg-white/95 backdrop-blur-sm shadow-lg border-l border-gray-200 overflow-y-auto z-50"
           >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">

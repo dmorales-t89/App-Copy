@@ -26,13 +26,22 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
   };
 
   const getEventColor = (event: Event) => {
-    return event.color || groups.find(g => g.id === event.groupId)?.color || '#3B82F6';
+    return event.color || groups.find(g => g.id === event.groupId)?.color || '#AEC6CF';
+  };
+
+  const formatEventTime = (event: Event) => {
+    if (!event.startTime) return '';
+    try {
+      return format(new Date(`2000-01-01T${event.startTime}`), 'h:mm a');
+    } catch {
+      return event.startTime;
+    }
   };
 
   return (
     <div className="h-full flex flex-col">
       {/* Week day headers */}
-      <div className="grid grid-cols-7 border-b border-gray-200"> {/*Editeddddddddddd was 200 */}
+      <div className="grid grid-cols-7 border-b border-gray-200">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div
             key={day}
@@ -55,9 +64,9 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
             <div
               key={day.toString()}
               className={cn(
-                "border-r border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50 transition-colors last:border-r-0",
+                "border-r border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50 transition-colors last:border-r-0 group",
                 !isCurrentMonth && "bg-gray-50/50",
-                "flex flex-col min-h-[120px]"
+                "flex flex-col min-h-[120px] relative"
               )}
               onClick={() => onAddEvent(day)}
             >
@@ -80,23 +89,44 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
                 {dayEvents.slice(0, 3).map((event) => (
                   <div
                     key={event.id}
-                    className="text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{ 
-                      backgroundColor: getEventColor(event), 
-                      color: '#ffffff'
-                    }}
-                    title={`${event.title}${event.startTime ? ` at ${event.startTime}` : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEventClick(event);
-                    }}
+                    className="relative group/event"
                   >
-                    {event.startTime && (
-                      <span className="font-medium mr-1">
-                        {format(new Date(`2000-01-01T${event.startTime}`), 'h:mm a')}
-                      </span>
-                    )}
-                    {event.title}
+                    <div
+                      className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                      style={{ 
+                        backgroundColor: getEventColor(event), 
+                        color: '#ffffff'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEventClick(event);
+                      }}
+                    >
+                      <div className="font-medium leading-tight">
+                        {event.startTime && (
+                          <span className="font-medium mr-1">
+                            {formatEventTime(event)}
+                          </span>
+                        )}
+                        {event.title}
+                      </div>
+                    </div>
+                    
+                    {/* Tooltip on hover */}
+                    <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">
+                      <div className="font-medium">{event.title}</div>
+                      {event.startTime && event.endTime && (
+                        <div className="text-gray-300">
+                          {formatEventTime(event)} - {format(new Date(`2000-01-01T${event.endTime}`), 'h:mm a')}
+                        </div>
+                      )}
+                      {event.description && (
+                        <div className="text-gray-300 mt-1">{event.description}</div>
+                      )}
+                      <div className="text-gray-400 text-xs mt-1">
+                        {groups.find(g => g.id === event.groupId)?.name || 'Calendar'}
+                      </div>
+                    </div>
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
@@ -105,6 +135,9 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
                   </div>
                 )}
               </div>
+              
+              {/* Hover indicator for adding events */}
+              <div className="absolute inset-0 border-2 border-[#C2EABD] rounded opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none" />
             </div>
           );
         })}

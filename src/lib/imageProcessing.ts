@@ -1,14 +1,16 @@
 interface CalendarEvent {
   title: string;
   date: Date;
-  time?: string;
+  startTime?: string;
+  endTime?: string;
   description?: string;
 }
 
 interface APICalendarEvent {
   title: string;
   date: string;
-  time?: string;
+  startTime?: string;
+  endTime?: string;
   description?: string;
   isValidDate: boolean;
 }
@@ -150,7 +152,8 @@ export async function processCalendarImage(file: File): Promise<CalendarEvent[]>
       return {
         title: event.title || 'Untitled Event',
         date: eventDate,
-        time: event.time,
+        startTime: event.startTime,
+        endTime: event.endTime,
         description: event.description
       };
     });
