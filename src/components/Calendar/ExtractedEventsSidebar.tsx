@@ -9,7 +9,8 @@ import { ExtractedEventCard } from './ExtractedEventCard';
 interface ExtractedEvent {
   title: string;
   date: Date;
-  time?: string;
+  startTime?: string;
+  endTime?: string;
   description?: string;
 }
 

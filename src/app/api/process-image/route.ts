@@ -33,6 +33,7 @@ IMPORTANT INSTRUCTIONS:
 - If only one time is shown, put it in start_time and leave end_time empty
 - Use 12-hour format with AM/PM for times
 - If no specific event title is visible, create a descriptive title based on the context
+- If the image contains time information (start or end), do not treat the event as all-day. All-day should only apply to events with no time info.
 
 If you find multiple events, include them all in the array. If no events are found, return an empty array [].
 Only return valid JSON - no additional text or explanations.`;
@@ -244,11 +245,11 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
     return events.map((event: any) => {
       const parsedDate = parseDate(event.date);
       
-      // Parse start and end times
+      // Normalize start_time and end_time to camelCase early
       let startTime = event.start_time || event.startTime;
       let endTime = event.end_time || event.endTime;
       
-      // If we have a start time but no end time, default to +1 hour
+      // If we have a start time but no end time, auto-calculate end time as +1 hour
       if (startTime && !endTime) {
         try {
           const startDate = new Date(`2000-01-01T${convertTo24Hour(startTime)}`);
@@ -262,8 +263,11 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
         }
       }
       
+      // Improve title fallback
+      const title = event.title?.trim() || `Event on ${event.date || 'unknown date'}`;
+      
       return {
-        title: event.title || 'Untitled Event',
+        title,
         date: parsedDate ? parsedDate.toISOString() : event.date,
         startTime: startTime,
         endTime: endTime,

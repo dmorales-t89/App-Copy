@@ -445,7 +445,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                         className="w-full justify-start border-2 border-gray-300 hover:border-[#1a73e8]"
                       >
                         <Palette className="h-4 w-4 mr-2" />
-                        <span>Custom Color</span>
+                        <span className="text-gray-900 font-medium">Custom Color</span>
                         <div 
                           className="w-4 h-4 rounded-full ml-auto border border-gray-300" 
                           style={{ backgroundColor: field.value }}

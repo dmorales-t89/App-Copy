@@ -10,7 +10,8 @@ import { processCalendarImage } from '@/lib/imageProcessing';
 interface ExtractedEvent {
   title: string;
   date: Date;
-  time?: string;
+  startTime?: string;
+  endTime?: string;
   description?: string;
 }
 
