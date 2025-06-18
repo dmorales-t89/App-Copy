@@ -171,7 +171,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                 <FormControl>
                   <Input 
                     {...field} 
-                    className="border-0 border-b-2 border-gray-300 rounded-none text-xl font-medium placeholder:text-gray-400 focus:border-[#1a73e8] focus:ring-0 px-0 py-3" 
+                    className="border-0 border-b-2 border-gray-300 rounded-none text-xl font-medium placeholder:text-gray-400 focus:border-[#1a73e8] focus:ring-0 px-0 py-3 text-black" 
                     placeholder="Add title"
                   />
                 </FormControl>
@@ -214,7 +214,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-left font-normal border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 px-3 py-3 h-auto",
+                              "w-full justify-start text-left font-normal border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 px-3 py-3 h-auto text-black",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -265,7 +265,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                               }
                             }}
                           >
-                            <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto">
+                            <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto text-black">
                               <Clock className="h-4 w-4 mr-2 text-gray-500" />
                               <span className="text-gray-900 font-medium">
                                 {field.value ? getTimeDisplayValue(field.value) : 'Start time'}
@@ -296,7 +296,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                             value={field.value}
                             onValueChange={field.onChange}
                           >
-                            <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto">
+                            <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto text-black">
                               <Clock className="h-4 w-4 mr-2 text-gray-500" />
                               <span className="text-gray-900 font-medium">
                                 {field.value ? getTimeDisplayValue(field.value) : 'End time'}
@@ -342,7 +342,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full justify-start text-left font-normal border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 px-3 py-3 h-auto",
+                            "w-full justify-start text-left font-normal border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 px-3 py-3 h-auto text-black",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -378,7 +378,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                   <FormLabel className="text-gray-900 font-medium">Calendar</FormLabel>
                   <FormControl>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto">
+                      <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto text-black">
                         {selectedGroup ? (
                           <div className="flex items-center gap-2">
                             <div 
@@ -419,7 +419,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                   <FormLabel className="text-gray-900 font-medium">Event Color</FormLabel>
                   <div className="space-y-4">
                     {/* Predefined Colors */}
-                    <div className="flex flex-wrap gap-3 pt-2">
+                    <div className="flex flex-wrap gap-3 pt-2 p-3 border-2 border-gray-300 rounded-lg bg-gray-50">
                       {allColors.map((color) => (
                         <button
                           key={color}
@@ -442,7 +442,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                         type="button"
                         variant="outline"
                         onClick={() => setShowColorPicker(!showColorPicker)}
-                        className="w-full justify-start border-2 border-gray-300 hover:border-[#1a73e8]"
+                        className="w-full justify-start border-2 border-gray-300 hover:border-[#1a73e8] text-black"
                       >
                         <Palette className="h-4 w-4 mr-2" />
                         <span className="text-gray-900 font-medium">Custom Color</span>
@@ -485,7 +485,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                   <FormControl>
                     <Textarea
                       {...field}
-                      className="border-2 border-gray-300 hover:border-[#1a73e8] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 rounded-lg min-h-[80px] placeholder:text-gray-400 resize-none px-3 py-2"
+                      className="border-2 border-gray-300 hover:border-[#1a73e8] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 rounded-lg min-h-[80px] placeholder:text-gray-400 resize-none px-3 py-2 text-black"
                       placeholder="Add description..."
                     />
                   </FormControl>

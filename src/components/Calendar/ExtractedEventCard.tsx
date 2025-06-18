@@ -275,7 +275,7 @@ export function ExtractedEventCard({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter event title"
-              className="border-2 border-gray-300 focus:border-[#1a73e8] focus:ring-[#1a73e8] text-[#011936]"
+              className="border-2 border-gray-300 focus:border-[#1a73e8] focus:ring-[#1a73e8] text-black"
             />
           </div>
 
@@ -310,7 +310,7 @@ export function ExtractedEventCard({
                   Start Time
                 </label>
                 <Select value={startTime} onValueChange={setStartTime}>
-                  <SelectTrigger className="border-2 border-gray-300 focus:border-[#1a73e8] h-auto py-3">
+                  <SelectTrigger className="border-2 border-gray-300 focus:border-[#1a73e8] h-auto py-3 text-black">
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-2 text-gray-500" />
                       <span className="text-[#011936] font-medium">
@@ -338,7 +338,7 @@ export function ExtractedEventCard({
                   End Time
                 </label>
                 <Select value={endTime} onValueChange={setEndTime}>
-                  <SelectTrigger className="border-2 border-gray-300 focus:border-[#1a73e8] h-auto py-3">
+                  <SelectTrigger className="border-2 border-gray-300 focus:border-[#1a73e8] h-auto py-3 text-black">
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-2 text-gray-500" />
                       <span className="text-[#011936] font-medium">
@@ -376,7 +376,7 @@ export function ExtractedEventCard({
               Calendar
             </label>
             <Select value={selectedGroupId} onValueChange={handleGroupChange}>
-              <SelectTrigger className="border-2 border-gray-300 focus:border-[#1a73e8] h-auto py-3">
+              <SelectTrigger className="border-2 border-gray-300 focus:border-[#1a73e8] h-auto py-3 text-black">
                 {selectedGroup ? (
                   <div className="flex items-center space-x-2">
                     <div 
@@ -438,7 +438,7 @@ export function ExtractedEventCard({
                 type="button"
                 variant="outline"
                 onClick={() => setShowColorPicker(!showColorPicker)}
-                className="w-full justify-start border-2 border-gray-300 hover:border-[#1a73e8] h-auto py-3"
+                className="w-full justify-start border-2 border-gray-300 hover:border-[#1a73e8] h-auto py-3 text-black"
               >
                 <Palette className="h-4 w-4 mr-2" />
                 <span className="text-[#011936] font-medium">Custom Color</span>
@@ -478,7 +478,7 @@ export function ExtractedEventCard({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add description..."
-              className="border-2 border-gray-300 focus:border-[#1a73e8] focus:ring-[#1a73e8] resize-none text-[#011936]"
+              className="border-2 border-gray-300 focus:border-[#1a73e8] focus:ring-[#1a73e8] resize-none text-black"
               rows={3}
             />
           </div>
