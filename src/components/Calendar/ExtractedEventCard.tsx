@@ -43,6 +43,73 @@ interface ExtractedEventCardProps {
   className?: string;
 }
 
+// Helper function to validate and parse time
+const parseTimeString = (timeStr: string): string | null => {
+  if (!timeStr) return null;
+  
+  try {
+    // Try to parse various time formats
+    const timeFormats = [
+      /^(\d{1,2}):(\d{2})$/,           // HH:MM or H:MM
+      /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i, // HH:MM AM/PM
+      /^(\d{1,2})\s*(AM|PM)$/i,        // H AM/PM
+    ];
+    
+    for (const format of timeFormats) {
+      const match = timeStr.trim().match(format);
+      if (match) {
+        let hours = parseInt(match[1], 10);
+        const minutes = match[2] ? parseInt(match[2], 10) : 0;
+        const period = match[3] || match[2]; // For formats with AM/PM
+        
+        // Convert to 24-hour format if needed
+        if (period && period.toUpperCase() === 'PM' && hours !== 12) {
+          hours += 12;
+        } else if (period && period.toUpperCase() === 'AM' && hours === 12) {
+          hours = 0;
+        }
+        
+        // Validate hours and minutes
+        if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+      }
+    }
+    
+    // Try parsing as a Date object
+    const testDate = new Date(`2000-01-01T${timeStr}`);
+    if (!isNaN(testDate.getTime())) {
+      return format(testDate, 'HH:mm');
+    }
+    
+    return null;
+  } catch (error) {
+    console.warn('Failed to parse time string:', timeStr, error);
+    return null;
+  }
+};
+
+// Helper function to safely add hours to a time string
+const safeAddHours = (timeStr: string, hoursToAdd: number): string => {
+  try {
+    const parsedTime = parseTimeString(timeStr);
+    if (!parsedTime) {
+      // Fallback to current time + hours
+      return format(addHours(new Date(), hoursToAdd), 'HH:mm');
+    }
+    
+    const testDate = new Date(`2000-01-01T${parsedTime}`);
+    if (isNaN(testDate.getTime())) {
+      return format(addHours(new Date(), hoursToAdd), 'HH:mm');
+    }
+    
+    return format(addHours(testDate, hoursToAdd), 'HH:mm');
+  } catch (error) {
+    console.warn('Failed to add hours to time:', timeStr, error);
+    return format(addHours(new Date(), hoursToAdd), 'HH:mm');
+  }
+};
+
 export function ExtractedEventCard({ 
   event, 
   groups, 
@@ -54,26 +121,25 @@ export function ExtractedEventCard({
   const [description, setDescription] = useState(event.description || '');
   const [selectedDate, setSelectedDate] = useState(event.date);
   const [isAllDay, setIsAllDay] = useState(!event.time);
-  const [startTime, setStartTime] = useState(
-    event.time ? event.time : format(new Date(), 'HH:mm')
-  );
-  const [endTime, setEndTime] = useState(
-    event.time 
-      ? format(addHours(new Date(`2000-01-01T${event.time}`), 1), 'HH:mm')
-      : format(addHours(new Date(), 1), 'HH:mm')
-  );
+  
+  // Safely parse the initial time values
+  const initialStartTime = event.time ? parseTimeString(event.time) || '09:00' : '09:00';
+  const initialEndTime = event.time ? safeAddHours(event.time, 1) : '10:00';
+  
+  const [startTime, setStartTime] = useState(initialStartTime);
+  const [endTime, setEndTime] = useState(initialEndTime);
   const [selectedGroupId, setSelectedGroupId] = useState(groups[0]?.id || '1');
-  const [selectedColor, setSelectedColor] = useState(groups[0]?.color || '#3B82F6');
+  const [selectedColor, setSelectedColor] = useState(groups[0]?.color || '#AEC6CF');
 
   const predefinedColors = [
-    '#3B82F6', // Blue
-    '#10B981', // Green
-    '#EF4444', // Red
-    '#8B5CF6', // Purple
-    '#F59E0B', // Yellow
-    '#EC4899', // Pink
-    '#06B6D4', // Cyan
-    '#84CC16', // Lime
+    '#AEC6CF', // Pastel Blue
+    '#77DD77', // Pastel Green
+    '#FF6961', // Pastel Red/Coral
+    '#B39EB5', // Pastel Purple
+    '#FDFD96', // Pastel Yellow
+    '#FFB347', // Pastel Orange
+    '#CFCFC4', // Pastel Grey
+    '#F49AC2', // Pastel Pink
   ];
 
   const generateTimeOptions = () => {
