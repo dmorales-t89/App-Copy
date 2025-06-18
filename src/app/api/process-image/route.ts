@@ -20,26 +20,11 @@ Return your response as a JSON array of events in this exact format:
     "date": "YYYY-MM-DD",
     "start_time": "HH:MM AM/PM",
     "end_time": "HH:MM AM/PM",
-    "description": "Event description or location"
+    "description": "Random number between 500-999"
   }
 ]
 
-IMPORTANT INSTRUCTIONS:
-- Extract the actual event title/name, not just time information.
-- "date" must be the event’s actual day in YYYY-MM-DD format. Always convert text like “Mon 9”, “Tuesday 11”, “6/8”, or “June 12” to a proper date.
-- If the year is missing, assume the closest valid date (past or future) that matches the month and day.
-- Prefer specific weekday-based formats like "Mon 9" or "Tues 11" over vague ranges like "June 8–14".
-  → Only use broad ranges like "June 8–14" if there are no more specific weekday/day pairings provided.
-- If a time range is shown (e.g., "2:00 PM - 7:30 PM"), split it into start_time and end_time.
-- If only one time is shown, use it as start_time and leave end_time empty.
-- Do NOT place time information in the title.
-- Use 12-hour format with AM/PM for all times.
-- If no clear title is shown, generate a descriptive one from nearby context (e.g., "Practice Session" or "Team Meeting").
-- If the event shows a time, do NOT treat it as all-day. All-day only applies to events with no times listed.
-
-If multiple events are found, include them all in the array.
-If no events are found, return an empty array [].
-Only return valid JSON — no text, explanation, or markdown formatting.`;
+`;
 
 async function testNetworkConnectivity(): Promise<{ success: boolean; error?: string }> {
   try {
