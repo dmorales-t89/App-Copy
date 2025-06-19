@@ -11,9 +11,12 @@ interface CalendarEvent {
 
 export const dynamic = 'force-dynamic';
 
-const LLM_PROMPT = `You are an expert calendar assistant. Analyze the image and extract **only real, concrete calendar events** (like practices, meetings, or appointments).
+const today = new Date();
+const currentDateStr = today.toISOString().split('T')[0]; // e.g., "2025-06-04"
 
-Return your response as a valid JSON array in this **EXACT format**:
+const LLM_PROMPT = `You are an expert calendar assistant. Today's date is ${currentDateStr}. Analyze the image and extract only clear, specific calendar events such as practices, games, meetings, or appointments.
+
+Return your answer as a valid JSON array in this exact format:
 [
   {
     "title": "Event title",
@@ -24,28 +27,33 @@ Return your response as a valid JSON array in this **EXACT format**:
   }
 ]
 
-IMPORTANT RULES FOR DATE EXTRACTION:
-- If multiple date formats exist (e.g., “June 8–14” AND “Mon 9”, “Tues 11”), **prioritize specific weekday+day formats like “Mon 9” or “Tues 11”**. These are more likely to represent individual events.
-- **DO NOT use vague ranges like “June 8–14”** as standalone event dates unless no other day/date pairings are present.
-- Convert expressions like “Mon 9”, “Wed 12”, “June 13”, or “6/14” into full ISO format: YYYY-MM-DD.
-- If the year is missing, **choose the closest matching date (past or future)** based on today’s date — not a distant future date.
+DATE EXTRACTION RULES:
+- If the image includes both:
+   - a week range (e.g., "June 8–14"), and
+   - specific days like "Mon 9", "Tues 10", or "Wed 12",
+  then prioritize the specific day+date entries as actual event dates.
+- Do not use vague ranges like "June 8–14" as event dates unless no more specific entries are present.
+- Convert formats like "Mon 9", "Wed 12", "June 13", or "6/14" into full ISO format (YYYY-MM-DD).
+- If the year is missing, assume the current year is ${today.getFullYear()}.
+  Use a different year only if the event has clearly passed and is part of a future season (e.g., school or sports year context).
 
-TIME FORMATTING:
-- For time ranges like “2:00 PM - 5:00 PM”, split into:
-  "start_time": "2:00 PM", "end_time": "5:00 PM"
-- If only one time is shown, put it in "start_time" and leave "end_time" empty.
-- If NO time is shown, leave both fields empty and the app will treat it as an all-day event.
+TIME RULES:
+- For time ranges like "3:00 PM - 5:00 PM", use:
+  "start_time": "3:00 PM", "end_time": "5:00 PM"
+- If only one time is shown, use it as "start_time" and leave "end_time" empty.
+- If no time is provided, leave both start_time and end_time empty, and the app will treat it as an all-day event.
 
-TITLE + DESCRIPTION:
-- Do **NOT** include time or date info in the title field.
-- If the event has no clear name, create a simple title like “Practice” or “Team Meeting”.
-- Add locations or extra info in the description if present.
+TITLE AND DESCRIPTION:
+- Do not include date or time in the title field.
+- If no clear title is visible, use a simple one like "Practice" or "Team Meeting".
+- Use the description field to include optional context, like locations or notes.
 
-FINAL FORMAT RULES:
-- Only return clean, valid JSON. No markdown. No comments. No explanations.
+FINAL RESPONSE RULES:
+- Return only clean, valid JSON.
+- No markdown, no explanations, no extra formatting.
 - If no events are found, return an empty array: []
+`;
 
-Be precise. Prioritize individual, schedulable events over date ranges.`;
 
 async function testNetworkConnectivity(): Promise<{ success: boolean; error?: string }> {
   try {
