@@ -17,46 +17,33 @@ const currentDateStr = today.toISOString().split("T")[0]; // e.g., "2025-06-04"
 const currentYear = currentDateStr.slice(0, 4);
 
 const LLM_PROMPT = `
-You are an expert calendar assistant. **Today's date is ${currentDateStr}.**
-You MUST use this date to determine the correct year when parsing dates.
+Today's date is ${currentDateStr}. You are a calendar assistant.
 
-Analyze the image and extract only clear, specific calendar events such as practices, games, meetings, or appointments.
+Extract specific events (like practice, game, meeting) from the image and return a valid JSON array like:
 
-Return your answer as a valid JSON array in this exact format:
 [
   {
     "title": "Event title",
     "date": "YYYY-MM-DD",
     "start_time": "HH:MM AM/PM",
     "end_time": "HH:MM AM/PM",
-    "description": "Optional description or location"
+    "description": "Optional location or notes"
   }
 ]
 
-DATE EXTRACTION RULES:
-- If both a week range (e.g., "June 8–14") and specific entries (e.g., "Mon 9", "Tues 10") appear, YOU MUST prioritize the specific weekday+day entries. DO NOT use week ranges as standalone event dates unless nothing else exists.
-- Convert entries like "Mon 9", "Wed 12", "June 13", or "6/14" to ISO format (YYYY-MM-DD).
-- If the year is missing, ALWAYS assume the year is ${currentYear}.
-- DO NOT assume 2023 or any other incorrect year.
+Date Rules:
+- If both a week range (e.g., "June 8–14") and individual dates ("Mon 9", "Wed 12") are present, use the individual dates only.
+- Convert formats like "Mon 9", "6/14", or "June 13" into full ISO date format (YYYY-MM-DD).
+- If the year is missing, use the current year: ${currentYear}.
 
-TIME RULES:
-- For time ranges like "3:00 PM - 5:00 PM", use:
-  "start_time": "3:00 PM", "end_time": "5:00 PM"
-- If only one time is shown, use it as "start_time" and leave "end_time" empty.
-- If no time is provided, leave both start_time and end_time empty (the app will treat it as an all-day event).
+Time Rules:
+- Use "start_time" and "end_time" based on the image.
+- If only one time exists, use it as "start_time" and leave "end_time" empty.
+- If no time, leave both blank (all-day).
 
-TITLE AND DESCRIPTION:
-- Do not include date or time in the title field.
-- If no clear title is visible, use a simple one like "Practice" or "Team Meeting".
-- Use the description field for optional context like location or notes.
-
-FINAL RESPONSE RULES:
-- Return only clean, valid JSON.
-- No markdown, no explanations, no extra formatting.
-- If no events are found, return an empty array: []
-
-Focus only on real, schedulable events. Be precise. Use today’s date as your reference.
+Only return clean JSON. No markdown, no extra text. If nothing is found, return: []
 `;
+
 
 
 
