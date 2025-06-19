@@ -104,7 +104,8 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
           'User-Agent': 'PicSchedule/1.0'
         },
         body: JSON.stringify({
-          model: 'opengvlab/internvl3-14b:free',
+          model: 'meta-llama/llama-3.2-11b-instruct:free',
+,
           messages: [
             {
               role: 'user',
