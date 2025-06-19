@@ -11,10 +11,8 @@ interface CalendarEvent {
 
 export const dynamic = 'force-dynamic';
 
-const today = new Date();
-const currentDateStr = today.toISOString().split('T')[0]; // e.g., "2025-06-04"
 
-const LLM_PROMPT = `You are an expert calendar assistant. Today's date is ${currentDateStr}. Analyze the image and extract only clear, specific calendar events such as practices, games, meetings, or appointments.
+const LLM_PROMPT = `You are an expert calendar assistant. Analyze the image and extract only clear, specific calendar events such as practices, games, meetings, or appointments.
 
 Return your answer as a valid JSON array in this exact format:
 [
@@ -34,8 +32,6 @@ DATE EXTRACTION RULES:
   then prioritize the specific day+date entries as actual event dates.
 - Do not use vague ranges like "June 8–14" as event dates unless no more specific entries are present.
 - Convert formats like "Mon 9", "Wed 12", "June 13", or "6/14" into full ISO format (YYYY-MM-DD).
-- If the year is missing, assume the current year is ${today.getFullYear()}.
-  Use a different year only if the event has clearly passed and is part of a future season (e.g., school or sports year context).
 
 TIME RULES:
 - For time ranges like "3:00 PM - 5:00 PM", use:
