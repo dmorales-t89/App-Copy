@@ -112,7 +112,7 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
         },
         body: JSON.stringify({
           model: 'meta-llama/llama-4-maverick:free',
-,
+
           messages: [
             {
               role: 'user',
