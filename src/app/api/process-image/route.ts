@@ -37,7 +37,7 @@ Return a **JSON array** of objects using this structure:
 ### RULES:
 
 1. **Only include real scheduled events** — ignore headers like "June 08 - 14", "June 15 - 21", or any date range separators.
-2. If no event title is shown in the image, use a generic name like `"Event 1"`, `"Event 2"`, etc.
+2. If no event title is shown in the image, use a generic name like "Event 1", "Event 2", etc.
 3. Parse the **date from the weekday + number** (e.g., "Mon 9" = June 9, 2025). Use the correct full date in `YYYY-MM-DD` format.
 4. Extract start and end times shown (e.g., "2:00 PM–7:30 PM" = start_time: "2:00 PM", end_time: "7:30 PM").
 5. If only one time exists, use it as `start_time` and leave `end_time` empty.
