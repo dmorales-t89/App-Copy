@@ -17,29 +17,36 @@ const currentDateStr = today.toISOString().split("T")[0]; // e.g., "2025-06-04"
 const currentYear = currentDateStr.slice(0, 4);
 
 const LLM_PROMPT = `
-Today's date is ${currentDateStr}. You are a calendar assistant.
 
-Extract specific events (like practice, game, meeting) from the image and return a valid JSON array like:
+Extract specific events from the image but prioritize individual dates over week ranges and return a valid JSON array like:
 
 [
-  {
-    "title": "Event title",
-    "date": "YYYY-MM-DD",
-    "start_time": "HH:MM AM/PM",
-    "end_time": "HH:MM AM/PM",
-    "description": "Optional location or notes"
-  }
+ {
+  "title": "Event title",
+  "date": "YYYY-MM-DD",
+  "start_time": "HH:MM AM/PM",
+  "end_time": "HH:MM AM/PM",
+  "description": "Optional location or notes"
+ }
 ]
 
 Date Rules:
-- If both a week range (e.g., "June 8–14") and individual dates ("Mon 9", "Wed 12") are present, use the individual dates only.
-- Convert formats like "Mon 9", "6/14", or "June 13" into full ISO date format (YYYY-MM-DD).
-- If the year is missing, use the current year: ${currentYear}.
+
+
+Convert formats like "Mon 9", "6/14", or "June 13" into full ISO date format (YYYY-MM-DD).
+
+If the year is missing, use the current year: ${currentYear}.
+
+If there is information about the event title include it otherwise it should be a numbered event like "Event 1"
 
 Time Rules:
-- Use "start_time" and "end_time" based on the image.
-- If only one time exists, use it as "start_time" and leave "end_time" empty.
-- If no time, leave both blank (all-day).
+
+
+Use "start_time" and "end_time" based on the image.
+
+If only one time exists, use it as "start_time" and leave "end_time" empty.
+
+If no time, leave both blank (all-day).
 
 Only return clean JSON. No markdown, no extra text. If nothing is found, return: []
 `;
