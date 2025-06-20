@@ -18,33 +18,34 @@ const currentYear = currentDateStr.slice(0, 4);
 
 const LLM_PROMPT = `
 
-Extract specific events from the image but ignore week ranges like "June 08-14" and return a valid JSON array like:
+You are an intelligent event extraction AI.
 
+Extract only **actual events** from this image of a schedule. Follow these rules strictly:
+
+### OUTPUT FORMAT:
+Return a **JSON array** of objects using this structure:
 [
  {
-  "title": "Event title",
+  "title": "Event 1",
   "date": "YYYY-MM-DD",
   "start_time": "HH:MM AM/PM",
   "end_time": "HH:MM AM/PM",
-  "description": "Optional location or notes"
+  "description": ""
  }
 ]
 
-Date Rules:
-Convert formats like "Mon 9", "6/14", or "June 13" into full ISO date format (YYYY-MM-DD).
+### RULES:
 
-If the year is missing, use the current year: ${currentYear}.
+1. **Only include real scheduled events** — ignore headers like "June 08 - 14", "June 15 - 21", or any date range separators.
+2. If no event title is shown in the image, use a generic name like `"Event 1"`, `"Event 2"`, etc.
+3. Parse the **date from the weekday + number** (e.g., "Mon 9" = June 9, 2025). Use the correct full date in `YYYY-MM-DD` format.
+4. Extract start and end times shown (e.g., "2:00 PM–7:30 PM" = start_time: "2:00 PM", end_time: "7:30 PM").
+5. If only one time exists, use it as `start_time` and leave `end_time` empty.
+6. If no time is listed, leave both time fields blank.
 
-If there is information about the event title include it otherwise it should be a numbered event like "Event 1"
+ONLY RETURN JSON. No extra text or explanation.
+If no events are found, return: []
 
-Time Rules:
-Use "start_time" and "end_time" based on the image.
-
-If only one time exists, use it as "start_time" and leave "end_time" empty.
-
-If no time, leave both blank (all-day).
-
-Only return clean JSON. No markdown, no extra text. If nothing is found, return: []
 `;
 
 
