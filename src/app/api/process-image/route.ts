@@ -17,35 +17,33 @@ const currentDateStr = today.toISOString().split("T")[0]; // e.g., "2025-06-04"
 const currentYear = currentDateStr.slice(0, 4);
 
 const LLM_PROMPT = `
-
 You are an intelligent event extraction AI.
 
-Extract only **actual events** from this image of a schedule. Follow these rules strictly:
+Extract only actual events from this image of a schedule. Follow these rules strictly:
 
-### OUTPUT FORMAT:
-Return a **JSON array** of objects using this structure:
+OUTPUT FORMAT:
+Return a JSON array of objects using this structure:
 [
- {
-  "title": "Event 1",
-  "date": "YYYY-MM-DD",
-  "start_time": "HH:MM AM/PM",
-  "end_time": "HH:MM AM/PM",
-  "description": ""
- }
+  {
+    "title": "Event 1",
+    "date": "YYYY-MM-DD",
+    "start_time": "HH:MM AM/PM",
+    "end_time": "HH:MM AM/PM",
+    "description": ""
+  }
 ]
 
-### RULES:
+RULES:
 
-1. **Only include real scheduled events** — ignore headers like "June 08 - 14", "June 15 - 21", or any date range separators.
-2. If no event title is shown in the image, use a generic name like "Event 1", "Event 2", etc.
-3. Parse the **date from the weekday + number** (e.g., "Mon 9" = June 9, 2025). Use the correct full date in `YYYY-MM-DD` format.
-4. Extract start and end times shown (e.g., "2:00 PM–7:30 PM" = start_time: "2:00 PM", end_time: "7:30 PM").
-5. If only one time exists, use it as `start_time` and leave `end_time` empty.
-6. If no time is listed, leave both time fields blank.
+1) Only include real scheduled events — ignore headers like "June 08 - 14", "June 15 - 21", or any date range separators.
+2) If no event title is shown in the image, use a generic name like "Event 1", "Event 2", etc.
+3) Parse the date from the weekday + number (e.g., "Mon 9" = June 9, 2025). Use the correct full date in YYYY-MM-DD format.
+4) Extract start and end times shown (e.g., "2:00 PM–7:30 PM" = start_time: "2:00 PM", end_time: "7:30 PM").
+5) If only one time exists, use it as start_time and leave end_time empty.
+6) If no time is listed, leave both time fields blank.
 
 ONLY RETURN JSON. No extra text or explanation.
 If no events are found, return: []
-
 `;
 
 
