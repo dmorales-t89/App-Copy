@@ -18,7 +18,7 @@ const currentYear = currentDateStr.slice(0, 4);
 
 const LLM_PROMPT = `
 
-Extract specific events from the image but prioritize individual dates over week ranges and return a valid JSON array like:
+Extract specific events from the image but ignore week ranges like "June 08-14" and return a valid JSON array like:
 
 [
  {
@@ -30,7 +30,21 @@ Extract specific events from the image but prioritize individual dates over week
  }
 ]
 
+Date Rules:
+Convert formats like "Mon 9", "6/14", or "June 13" into full ISO date format (YYYY-MM-DD).
 
+If the year is missing, use the current year: ${currentYear}.
+
+If there is information about the event title include it otherwise it should be a numbered event like "Event 1"
+
+Time Rules:
+Use "start_time" and "end_time" based on the image.
+
+If only one time exists, use it as "start_time" and leave "end_time" empty.
+
+If no time, leave both blank (all-day).
+
+Only return clean JSON. No markdown, no extra text. If nothing is found, return: []
 `;
 
 
