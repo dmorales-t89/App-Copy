@@ -19,7 +19,8 @@ const currentYear = currentDateStr.slice(0, 4);
 const LLM_PROMPT = `
 You are an intelligent event extraction AI.
 
-Extract only actual events from this image of a schedule. Follow these rules strictly:
+Extract only actual events from this image of a schedule. Ignore date range labels or separators like 'June 01 - 07', 'June 08 - 14', etc. Follow these rules:
+
 
 OUTPUT FORMAT:
 Return a JSON array of objects using this structure:
