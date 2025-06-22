@@ -281,7 +281,7 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
       
       return {
         title,
-        date: parsedDate ? parsedDate.toISOString() : event.date,
+        date: event.date,
         startTime: startTime,
         endTime: endTime,
         description: event.description,
