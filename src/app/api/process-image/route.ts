@@ -443,6 +443,8 @@ export async function POST(request: Request) {
       console.log('LLM Response received successfully');
 
       // Extract events from LLM response
+      console.log('Raw LLM response:\n', llmResponse);
+
       const events = extractEventsFromLLMResponse(llmResponse);
       console.log('Extracted events:', events.length);
 
