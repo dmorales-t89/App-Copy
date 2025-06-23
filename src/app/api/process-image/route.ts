@@ -227,6 +227,14 @@ function createFallbackEvent(imageFileName?: string): CalendarEvent[] {
   }];
 }
 
+function formatLocalDateToYMD(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+
 function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
   if (!llmResponse) {
     throw new Error('Empty response from LLM');
@@ -279,7 +287,7 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
       
       return {
         title,
-        date: event.date,
+        date: parsedDate ? formatLocalDateToYMD(parsedDate) : event.date,
         startTime: startTime,
         endTime: endTime,
         description: event.description,
