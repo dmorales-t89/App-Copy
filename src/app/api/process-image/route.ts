@@ -285,14 +285,19 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
       // Improve title fallback
       const title = event.title?.trim() || `Event on ${event.date || 'unknown date'}`;
       
+      // in extractEventsFromLLMResponse, replace your return with:
       return {
         title,
-        date: parsedDate ? formatLocalDateToYMD(parsedDate) : event.date,
-        startTime: startTime,
-        endTime: endTime,
-        description: event.description,
-        isValidDate: parsedDate !== null
+        // send the local-midnight timestamp
+        date: parsedDate
+          ? parsedDate.getTime()
+          : new Date(event.date).getTime(),
+        startTime,
+        endTime,
+        description,
+        isValidDate: parsedDate !== null,
       };
+
     });
 
   } catch (parseError) {
