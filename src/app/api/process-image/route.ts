@@ -352,34 +352,23 @@ function validateBase64Image(base64Image: string): boolean {
 
 function parseDate(dateStr: string): Date | null {
   if (!dateStr) return null;
-  
-  // Try parsing the date string
-  const date = new Date(dateStr);
-  
-  // Check if the date is valid
-  if (isNaN(date.getTime())) {
-    // Try some common date formats
-    const formats = [
-      /(\d{4})-(\d{1,2})-(\d{1,2})/, // YYYY-MM-DD
-      /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // MM/DD/YYYY
-      /(\d{1,2})-(\d{1,2})-(\d{4})/, // MM-DD-YYYY
-    ];
-    
-    for (const format of formats) {
-      const match = dateStr.match(format);
-      if (match) {
-        const testDate = new Date(match[0]);
-        if (!isNaN(testDate.getTime())) {
-          return testDate;
-        }
-      }
-    }
-    
+
+  const [year, month, day] = dateStr.split('-').map(Number);
+
+  // Validate that all parts are numbers and in valid ranges
+  if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
     return null;
   }
-  
-  return date;
+
+  // Construct the date in local time (month is 0-based in JavaScript)
+  const localDate = new Date(year, month - 1, day);
+
+  // Double check it's a valid date
+  if (isNaN(localDate.getTime())) return null;
+
+  return localDate;
 }
+
 
 function truncateText(text: string, maxLength: number = 300): string {
   if (text.length <= maxLength) return text;
