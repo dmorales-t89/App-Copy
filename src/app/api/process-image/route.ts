@@ -12,9 +12,7 @@ interface CalendarEvent {
 export const dynamic = 'force-dynamic';
 
 
-const today = new Date();
-const currentDateStr = today.toISOString().split("T")[0]; // e.g., "2025-06-04"
-const currentYear = currentDateStr.slice(0, 4);
+
 
 const LLM_PROMPT = `
 You are an intelligent event extraction AI.
