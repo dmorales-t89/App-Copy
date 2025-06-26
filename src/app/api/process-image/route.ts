@@ -105,7 +105,7 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
           'User-Agent': 'PicSchedule/1.0'
         },
         body: JSON.stringify({
-          model: 'opengvlab/internvl3-14b:free',
+          model: 'qwen/qwen2.5-vl-72b-instruct:free',
 
           messages: [
             {
@@ -149,7 +149,7 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
       }
 
       if (response.status === 404) {
-        throw new Error('MODEL_NOT_FOUND - opengvlab/internvl3-14b:free model not available');
+        throw new Error('MODEL_NOT_FOUND - qwen/qwen2.5-vl-72b-instruct:free model not available');
       }
 
       if (response.status === 503) {
@@ -294,7 +294,7 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
           : new Date(event.date).getTime(),
         startTime,
         endTime,
-        description,
+        description: event.description,
         isValidDate: parsedDate !== null,
       };
 
@@ -435,7 +435,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Processing image with OpenRouter opengvlab/internvl3-14b:free model...');
+    console.log('Processing image with OpenRouter qwen/qwen2.5-vl-72b-instruct:free model...');
 
     try {
       // Call OpenRouter API with enhanced error handling
@@ -455,7 +455,7 @@ export async function POST(request: Request) {
         text: llmResponse,
         events: validEvents,
         allEvents: events, // Include all events (even with invalid dates) for debugging
-        modelUsed: 'opengvlab/internvl3-14b:free (OpenRouter)',
+        modelUsed: 'qwen/qwen2.5-vl-72b-instruct:free (OpenRouter)',
         timestamp: new Date().toISOString(),
         fallbackUsed: false
       });
