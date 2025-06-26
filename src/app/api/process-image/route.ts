@@ -11,14 +11,10 @@ interface CalendarEvent {
 
 export const dynamic = 'force-dynamic';
 
-
-
-
 const LLM_PROMPT = `
 You are an intelligent event extraction AI.
 
 Extract only actual events from this image of a schedule. Ignore date range labels or separators like 'June 01 - 07', 'June 08 - 14', etc. Follow these rules:
-
 
 OUTPUT FORMAT:
 Return a JSON array of objects using this structure:
@@ -44,9 +40,6 @@ RULES:
 ONLY RETURN JSON. No extra text or explanation.
 If no events are found, return: []
 `;
-
-
-
 
 async function testNetworkConnectivity(): Promise<{ success: boolean; error?: string }> {
   try {
@@ -227,13 +220,25 @@ function createFallbackEvent(imageFileName?: string): CalendarEvent[] {
   }];
 }
 
-function formatLocalDateToYMD(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function convertTo24Hour(time12: string): string {
+  try {
+    const time = time12.trim().toLowerCase();
+    const [timePart, period] = time.split(/\s*(am|pm)\s*/);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    
+    let hour24 = hours;
+    if (period === 'pm' && hours !== 12) {
+      hour24 += 12;
+    } else if (period === 'am' && hours === 12) {
+      hour24 = 0;
+    }
+    
+    return `${hour24.toString().padStart(2, '0')}:${(minutes || 0).toString().padStart(2, '0')}`;
+  } catch (error) {
+    console.warn('Failed to convert time to 24-hour format:', time12, error);
+    return time12;
+  }
 }
-
 
 function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
   if (!llmResponse) {
@@ -264,17 +269,25 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
     return events.map((event: any) => {
       const parsedDate = parseDate(event.date);
       
-      // Normalize start_time and end_time to camelCase early
+      // Convert times to 24-hour format for backend storage
       let startTime = event.start_time || event.startTime;
       let endTime = event.end_time || event.endTime;
+      
+      // Convert to 24-hour format if they exist
+      if (startTime) {
+        startTime = convertTo24Hour(startTime);
+      }
+      if (endTime) {
+        endTime = convertTo24Hour(endTime);
+      }
       
       // If we have a start time but no end time, auto-calculate end time as +1 hour
       if (startTime && !endTime) {
         try {
-          const startDate = new Date(`2000-01-01T${convertTo24Hour(startTime)}`);
+          const startDate = new Date(`2000-01-01T${startTime}`);
           if (!isNaN(startDate.getTime())) {
             const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Add 1 hour
-            endTime = format12Hour(endDate);
+            endTime = endDate.toTimeString().slice(0, 5); // Format as HH:mm
           }
         } catch (error) {
           console.warn('Failed to calculate end time:', error);
@@ -285,19 +298,14 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
       // Improve title fallback
       const title = event.title?.trim() || `Event on ${event.date || 'unknown date'}`;
       
-      // in extractEventsFromLLMResponse, replace your return with:
       return {
         title,
-        // send the local-midnight timestamp
-        date: parsedDate
-          ? parsedDate.getTime()
-          : new Date(event.date).getTime(),
-        startTime,
-        endTime,
+        date: event.date,
+        startTime: startTime,
+        endTime: endTime,
         description: event.description,
-        isValidDate: parsedDate !== null,
+        isValidDate: parsedDate !== null
       };
-
     });
 
   } catch (parseError) {
@@ -311,39 +319,6 @@ function extractEventsFromLLMResponse(llmResponse: string): CalendarEvent[] {
       description: truncateText(llmResponse),
       isValidDate: true
     }];
-  }
-}
-
-function convertTo24Hour(time12: string): string {
-  try {
-    const time = time12.trim().toLowerCase();
-    const [timePart, period] = time.split(/\s*(am|pm)\s*/);
-    const [hours, minutes] = timePart.split(':').map(Number);
-    
-    let hour24 = hours;
-    if (period === 'pm' && hours !== 12) {
-      hour24 += 12;
-    } else if (period === 'am' && hours === 12) {
-      hour24 = 0;
-    }
-    
-    return `${hour24.toString().padStart(2, '0')}:${(minutes || 0).toString().padStart(2, '0')}`;
-  } catch (error) {
-    console.warn('Failed to convert time to 24-hour format:', time12, error);
-    return time12;
-  }
-}
-
-function format12Hour(date: Date): string {
-  try {
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit', 
-      hour12: true 
-    });
-  } catch (error) {
-    console.warn('Failed to format time to 12-hour format:', error);
-    return '';
   }
 }
 
@@ -381,7 +356,6 @@ function parseDate(dateStr: string): Date | null {
 
   return localDate;
 }
-
 
 function truncateText(text: string, maxLength: number = 300): string {
   if (text.length <= maxLength) return text;

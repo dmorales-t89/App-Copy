@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, startOfWeek, endOfWeek, isToday } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, startOfWeek, endOfWeek, isToday, parse } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -32,9 +32,22 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
   const formatEventTime = (event: Event) => {
     if (!event.startTime) return '';
     try {
-      return format(new Date(`2000-01-01T${event.startTime}`), 'h:mm a');
+      // Parse HH:mm format and convert to AM/PM
+      const parsed = parse(event.startTime, 'HH:mm', new Date());
+      return format(parsed, 'h:mm a');
     } catch {
       return event.startTime;
+    }
+  };
+
+  const formatEventEndTime = (event: Event) => {
+    if (!event.endTime) return '';
+    try {
+      // Parse HH:mm format and convert to AM/PM
+      const parsed = parse(event.endTime, 'HH:mm', new Date());
+      return format(parsed, 'h:mm a');
+    } catch {
+      return event.endTime;
     }
   };
 
@@ -117,7 +130,7 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
                       <div className="font-medium">{event.title}</div>
                       {event.startTime && event.endTime && (
                         <div className="text-gray-300">
-                          {formatEventTime(event)} - {format(new Date(`2000-01-01T${event.endTime}`), 'h:mm a')}
+                          {formatEventTime(event)} - {formatEventEndTime(event)}
                         </div>
                       )}
                       {event.description && (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns';
+import { format, addDays, startOfWeek, parseISO, isSameDay, parse } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -24,8 +24,14 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
       
       if (!event.startTime) return hour === 6; // All-day events show at 6 AM
       
-      const eventHour = parseInt(event.startTime.split(':')[0], 10);
-      return eventHour === hour;
+      try {
+        // Parse HH:mm format
+        const parsed = parse(event.startTime, 'HH:mm', new Date());
+        const eventHour = parsed.getHours();
+        return eventHour === hour;
+      } catch {
+        return false;
+      }
     });
   };
 
@@ -38,6 +44,16 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
     if (hour === 12) return '12 PM';
     if (hour < 12) return `${hour} AM`;
     return `${hour - 12} PM`;
+  };
+
+  const formatEventTime = (time: string) => {
+    try {
+      // Parse HH:mm format and convert to AM/PM
+      const parsed = parse(time, 'HH:mm', new Date());
+      return format(parsed, 'h:mm a');
+    } catch {
+      return time;
+    }
   };
 
   return (
@@ -99,7 +115,7 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
                             top: `${4 + index * 2}px`,
                             zIndex: 10 + index
                           }}
-                          title={`${event.title}${event.startTime ? ` at ${event.startTime}` : ''}`}
+                          title={`${event.title}${event.startTime ? ` at ${formatEventTime(event.startTime)}` : ''}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             onEventClick(event);
@@ -108,8 +124,7 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
                           <div className="font-medium truncate">{event.title}</div>
                           {event.startTime && event.endTime && (
                             <div className="text-xs opacity-90 truncate">
-                              {format(new Date(`2000-01-01T${event.startTime}`), 'h:mm a')} - 
-                              {format(new Date(`2000-01-01T${event.endTime}`), 'h:mm a')}
+                              {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
                             </div>
                           )}
                         </div>
