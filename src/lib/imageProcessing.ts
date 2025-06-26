@@ -8,9 +8,9 @@ interface CalendarEvent {
 
 interface APICalendarEvent {
   title: string;
-  date: string;
-  startTime?: string;
-  endTime?: string;
+  date: number; // Changed from string to number (timestamp)
+  start_time?: string;
+  end_time?: string;
   description?: string;
   isValidDate: boolean;
 }
@@ -138,22 +138,24 @@ export async function processCalendarImage(file: File): Promise<CalendarEvent[]>
       let eventDate: Date;
       
       try {
+        // event.date is now a timestamp (number), so convert it directly to Date
         eventDate = new Date(event.date);
+        
         // Validate the date
         if (isNaN(eventDate.getTime())) {
-          console.warn('Invalid date detected:', event.date, 'Using current date');
+          console.warn('Invalid date timestamp detected:', event.date, 'Using current date');
           eventDate = new Date();
         }
       } catch (error) {
-        console.warn('Error parsing date:', event.date, 'Using current date');
+        console.warn('Error parsing date timestamp:', event.date, 'Using current date');
         eventDate = new Date();
       }
       
       return {
         title: event.title || 'Untitled Event',
         date: eventDate,
-        startTime: event.startTime,
-        endTime: event.endTime,
+        startTime: event.start_time,
+        endTime: event.end_time,
         description: event.description
       };
     });
