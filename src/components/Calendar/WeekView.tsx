@@ -78,7 +78,7 @@ export function WeekView({
     }
   };
 
-  // ✅ Fix: Properly type the drag event handler
+  // ✅ Fix: Properly type the drag event handlers
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, eventId: string) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', eventId);
@@ -198,7 +198,7 @@ export function WeekView({
                           opacity: draggedEventId === event.id ? 0.5 : 1
                         }}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, event.id)}
+                        onDragStart={(e) => handleDragStart(e as React.DragEvent<HTMLDivElement>, event.id)}
                         onDragEnd={handleDragEnd}
                         onClick={(e) => {
                           e.stopPropagation();
