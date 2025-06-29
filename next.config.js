@@ -10,6 +10,7 @@ const nextConfig = {
         dns: false,
         child_process: false,
         tls: false,
+        ws: false,
       };
     }
     
