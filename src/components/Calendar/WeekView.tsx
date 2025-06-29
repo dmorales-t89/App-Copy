@@ -162,7 +162,7 @@ export function WeekView({
                 <div
                   key={`${day.toString()}-${hour}`}
                   className={cn(
-                    "relative p-1 cursor-pointer group transition-colors border-r border-gray-200",
+                    "relative cursor-pointer group transition-colors border-r border-gray-200",
                     dayIndex === 6 && "border-r-0", // Remove border from last column
                     isTarget 
                       ? "bg-blue-100 border-2 border-blue-300" 
@@ -187,11 +187,16 @@ export function WeekView({
                           mass: 0.8,
                           duration: 0.4
                         }}
-                        className="absolute inset-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
+                        className="absolute text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
                         style={{ 
                           backgroundColor: getEventColor(event), 
                           color: '#ffffff',
+                          // Perfect centering with proper margins
+                          left: '4px',
+                          right: '4px',
                           top: `${4 + index * 2}px`,
+                          height: 'calc(100% - 8px)',
+                          maxHeight: '56px', // Prevent overflow from cell
                           zIndex: 10 + index,
                           opacity: draggedEventId === event.id ? 0.5 : 1
                         }}
