@@ -78,7 +78,7 @@ export function WeekView({
     }
   };
 
-  // ✅ Fix: Properly type the drag event handlers
+  // ✅ Fix: Properly type the drag event handlers for HTMLDivElement
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, eventId: string) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', eventId);
@@ -119,17 +119,17 @@ export function WeekView({
     <div className="h-full flex flex-col bg-white">
       {/* Single Grid Container for entire calendar */}
       <div className="flex-1 overflow-y-auto">
-        {/* Header Row */}
+        {/* Header Row - Part of the same grid */}
         <div className="grid grid-cols-8 sticky top-0 z-10 bg-white border-b border-gray-200">
           {/* Empty corner cell */}
-          <div className="bg-gray-50 border-r border-gray-200 min-w-[80px]"></div>
+          <div className="bg-gray-50 border-r border-gray-200"></div>
           
           {/* Day headers */}
           {weekDays.map((day, index) => (
             <div
               key={day.toString()}
               className={cn(
-                "p-3 text-center bg-gray-50 border-r border-gray-200 min-h-[80px] flex flex-col justify-center",
+                "p-3 text-center bg-gray-50 border-r border-gray-200",
                 index === 6 && "border-r-0" // Remove border from last column
               )}
             >
@@ -148,7 +148,7 @@ export function WeekView({
         {hours.map((hour) => (
           <div key={hour} className="grid grid-cols-8 border-t border-gray-200 h-16">
             {/* Time label column */}
-            <div className="bg-gray-50 border-r border-gray-200 p-2 flex items-start justify-end min-w-[80px]">
+            <div className="bg-gray-50 border-r border-gray-200 p-2 flex items-start justify-end">
               <span className="text-xs text-gray-600 font-medium pr-2">
                 {formatHourLabel(hour)}
               </span>
@@ -163,7 +163,7 @@ export function WeekView({
                 <div
                   key={`${day.toString()}-${hour}`}
                   className={cn(
-                    "relative cursor-pointer group transition-colors border-r border-gray-200 h-16",
+                    "relative cursor-pointer group transition-colors border-r border-gray-200",
                     dayIndex === 6 && "border-r-0", // Remove border from last column
                     isTarget 
                       ? "bg-blue-100 border-2 border-blue-300" 
@@ -188,12 +188,16 @@ export function WeekView({
                           mass: 0.8,
                           duration: 0.4
                         }}
-                        className="absolute inset-0 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm group/event"
+                        className="absolute text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
                         style={{ 
                           backgroundColor: getEventColor(event), 
                           color: '#ffffff',
-                          // Proper centering with margin from borders
-                          margin: '2px 4px',
+                          // Perfect centering with proper margins
+                          left: '4px',
+                          right: '4px',
+                          top: `${4 + index * 2}px`,
+                          height: 'calc(100% - 8px)',
+                          maxHeight: '56px', // Prevent overflow from cell
                           zIndex: 10 + index,
                           opacity: draggedEventId === event.id ? 0.5 : 1
                         }}
