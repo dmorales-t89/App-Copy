@@ -34,7 +34,6 @@ if (supabaseUrl && supabaseAnonKey &&
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
-        storageKey: 'picschedule-auth',
         redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined
       },
       global: {
