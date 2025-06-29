@@ -173,18 +173,19 @@ export function WeekView({
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, day, hour)}
                     >
-                      <AnimatePresence mode="popLayout">
+                      <AnimatePresence mode="wait">
                         {hourEvents.map((event, index) => (
                           <motion.div
                             key={event.id}
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 1.2, opacity: 0 }}
+                            initial={{ scale: 0.7, opacity: 0, y: 10 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 1.3, opacity: 0, y: -10 }}
                             transition={{ 
                               type: "spring", 
-                              damping: 15, 
-                              stiffness: 300,
-                              duration: 0.3
+                              damping: 12, 
+                              stiffness: 400,
+                              mass: 0.8,
+                              duration: 0.4
                             }}
                             className="absolute inset-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
                             style={{ 

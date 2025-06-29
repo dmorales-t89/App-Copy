@@ -162,18 +162,19 @@ export function CalendarView({
               </div>
 
               <div className="flex-1 space-y-1 overflow-hidden">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence mode="wait">
                   {dayEvents.slice(0, 3).map((event) => (
                     <motion.div
                       key={event.id}
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 1.2, opacity: 0 }}
+                      initial={{ scale: 0.7, opacity: 0, y: 10 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      exit={{ scale: 1.3, opacity: 0, y: -10 }}
                       transition={{ 
                         type: "spring", 
-                        damping: 15, 
-                        stiffness: 300,
-                        duration: 0.3
+                        damping: 12, 
+                        stiffness: 400,
+                        mass: 0.8,
+                        duration: 0.4
                       }}
                       className="relative group/event"
                     >

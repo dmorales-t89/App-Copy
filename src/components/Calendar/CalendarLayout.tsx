@@ -352,11 +352,19 @@ export function CalendarLayout({
         )}
       </AnimatePresence>
 
-      {/* Main Content - This entire section shifts when sidebar opens */}
-      <div className={cn(
-        "flex-1 flex flex-col overflow-hidden transition-all duration-300",
-        showEventForm && "mr-[400px]"
-      )}>
+      {/* Main Content - Animated width based on sidebar state */}
+      <motion.div 
+        className="flex flex-col overflow-hidden"
+        animate={{ 
+          width: isSidebarOpen ? 'calc(100% - 280px)' : '100%'
+        }}
+        transition={{ 
+          type: "spring", 
+          damping: 20, 
+          stiffness: 150,
+          mass: 1
+        }}
+      >
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
           <div className="flex items-center gap-4">
@@ -493,7 +501,7 @@ export function CalendarLayout({
             />
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Event Form Sidebar */}
       <AnimatePresence>
