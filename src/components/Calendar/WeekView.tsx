@@ -120,8 +120,8 @@ export function WeekView({
       <div className="flex-1 overflow-y-auto">
         {/* Header Row */}
         <div className="grid grid-cols-8 sticky top-0 z-10 bg-white border-b border-gray-200">
-          {/* Empty corner cell - reduced width */}
-          <div className="bg-gray-50 border-r border-gray-200 w-16"></div>
+          {/* Empty corner cell */}
+          <div className="bg-gray-50 border-r border-gray-200 min-w-[80px]"></div>
           
           {/* Day headers */}
           {weekDays.map((day, index) => (
@@ -146,9 +146,9 @@ export function WeekView({
         {/* Time Rows - Each hour is a single grid row */}
         {hours.map((hour) => (
           <div key={hour} className="grid grid-cols-8 border-t border-gray-200 h-16">
-            {/* Time label column - reduced width and padding */}
-            <div className="bg-gray-50 border-r border-gray-200 w-16 flex items-start justify-end pr-2 pt-1">
-              <span className="text-xs text-gray-600 font-medium">
+            {/* Time label column */}
+            <div className="bg-gray-50 border-r border-gray-200 p-2 flex items-start justify-end min-w-[80px]">
+              <span className="text-xs text-gray-600 font-medium pr-2">
                 {formatHourLabel(hour)}
               </span>
             </div>
