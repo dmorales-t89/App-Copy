@@ -27,10 +27,6 @@ const nextConfig = {
     
     return config;
   },
-  // ✅ Experimental features for better build performance
-  experimental: {
-    optimizePackageImports: ['@supabase/supabase-js'],
-  },
 }
 
 module.exports = nextConfig
