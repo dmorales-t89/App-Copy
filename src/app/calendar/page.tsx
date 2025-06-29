@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { Database } from '@/lib/database.types';
-import { format } from 'date-fns';
+import { format, addDays, addWeeks, addMonths, isBefore, parseISO, isSameDay } from 'date-fns';
 
 interface Event {
   id: string;
@@ -20,6 +20,8 @@ interface Event {
   groupId: string;
   notes?: string;
   description?: string;
+  recurrenceRule?: 'daily' | 'weekly' | 'monthly';
+  recurrenceEndDate?: string;
 }
 
 interface CalendarGroup {
@@ -58,6 +60,61 @@ export default function CalendarPage() {
   const { user } = useAuth();
   const router = useRouter();
 
+  // Maximum number of recurring events to generate (safety limit)
+  const MAX_OCCURRENCES = 365;
+
+  const generateRecurringEvents = (baseEvent: Event): Event[] => {
+    if (!baseEvent.recurrenceRule || !baseEvent.recurrenceEndDate) {
+      return [baseEvent];
+    }
+
+    const events: Event[] = [baseEvent]; // Include the original event
+    const startDate = parseISO(baseEvent.date);
+    const endDate = parseISO(baseEvent.recurrenceEndDate);
+    let currentDate = startDate;
+    let occurrenceCount = 0;
+
+    while (isBefore(currentDate, endDate) && occurrenceCount < MAX_OCCURRENCES) {
+      // Calculate next occurrence date based on frequency
+      switch (baseEvent.recurrenceRule) {
+        case 'daily':
+          currentDate = addDays(currentDate, 1);
+          break;
+        case 'weekly':
+          currentDate = addWeeks(currentDate, 1);
+          break;
+        case 'monthly':
+          currentDate = addMonths(currentDate, 1);
+          break;
+        default:
+          return events; // Invalid frequency, return original event only
+      }
+
+      // Don't create an occurrence if it's the same as the original event
+      if (isSameDay(currentDate, startDate)) {
+        continue;
+      }
+
+      // Don't create an occurrence if it's after the end date
+      if (!isBefore(currentDate, endDate) && !isSameDay(currentDate, endDate)) {
+        break;
+      }
+
+      // Create a new event instance for this occurrence
+      const occurrenceEvent: Event = {
+        ...baseEvent,
+        id: `${baseEvent.id}-${format(currentDate, 'yyyy-MM-dd')}`, // Unique ID for occurrence
+        date: format(currentDate, 'yyyy-MM-dd'),
+      };
+
+      events.push(occurrenceEvent);
+      occurrenceCount++;
+    }
+
+    console.log(`Generated ${events.length - 1} recurring occurrences for event: ${baseEvent.title}`);
+    return events;
+  };
+
   const handleCreateEvent = async (eventData: EventFormData) => {
     if (!user) {
       console.error('No user found');
@@ -77,7 +134,12 @@ export default function CalendarPage() {
         group_id: eventData.groupId,
         notes: eventData.description,
         user_id: user.id,
-        image_url: null
+        image_url: null,
+        // Add recurrence fields
+        recurrence_rule: eventData.isRepeating ? eventData.repeatFrequency : null,
+        recurrence_end_date: eventData.isRepeating && eventData.repeatEndDate 
+          ? format(eventData.repeatEndDate, 'yyyy-MM-dd') 
+          : null,
       };
 
       console.log('Inserting event into database:', newEvent);
@@ -113,10 +175,17 @@ export default function CalendarPage() {
           user_id: data.user_id,
           groupId: data.group_id,
           notes: data.notes || undefined,
-          description: data.notes || undefined
+          description: data.notes || undefined,
+          recurrenceRule: data.recurrence_rule || undefined,
+          recurrenceEndDate: data.recurrence_end_date || undefined,
         };
-        setEvents(prev => [...prev, transformedEvent]);
-        console.log('Event added to state:', transformedEvent);
+
+        // Generate recurring events if applicable
+        const allEventInstances = generateRecurringEvents(transformedEvent);
+        
+        // Add all instances to state (original + recurring)
+        setEvents(prev => [...prev, ...allEventInstances]);
+        console.log('Event and recurring instances added to state:', allEventInstances.length);
       }
     } catch (error) {
       console.error('Error creating event:', error);
@@ -135,6 +204,9 @@ export default function CalendarPage() {
     try {
       console.log('Updating event:', eventId, 'with data:', eventData);
       
+      // Extract the base event ID (remove occurrence suffix if present)
+      const baseEventId = eventId.includes('-') ? eventId.split('-')[0] : eventId;
+      
       const updatedEvent = {
         title: eventData.title,
         date: format(eventData.startDate, 'yyyy-MM-dd'),
@@ -142,7 +214,12 @@ export default function CalendarPage() {
         end_time: eventData.isAllDay ? null : eventData.endTime,
         color: eventData.color,
         group_id: eventData.groupId,
-        notes: eventData.description
+        notes: eventData.description,
+        // Add recurrence fields
+        recurrence_rule: eventData.isRepeating ? eventData.repeatFrequency : null,
+        recurrence_end_date: eventData.isRepeating && eventData.repeatEndDate 
+          ? format(eventData.repeatEndDate, 'yyyy-MM-dd') 
+          : null,
       };
 
       console.log('Updating event in database:', updatedEvent);
@@ -150,7 +227,7 @@ export default function CalendarPage() {
       const { data, error } = await supabase
         .from('events')
         .update(updatedEvent)
-        .eq('id', eventId)
+        .eq('id', baseEventId)
         .eq('user_id', user.id)
         .select()
         .single();
@@ -180,12 +257,22 @@ export default function CalendarPage() {
           user_id: data.user_id,
           groupId: data.group_id,
           notes: data.notes || undefined,
-          description: data.notes || undefined
+          description: data.notes || undefined,
+          recurrenceRule: data.recurrence_rule || undefined,
+          recurrenceEndDate: data.recurrence_end_date || undefined,
         };
-        setEvents(prev => prev.map(event => 
-          event.id === eventId ? transformedEvent : event
+
+        // Remove all old instances of this event (original + recurring)
+        setEvents(prev => prev.filter(event => 
+          !event.id.startsWith(baseEventId)
         ));
-        console.log('Event updated in state:', transformedEvent);
+
+        // Generate new recurring events if applicable
+        const allEventInstances = generateRecurringEvents(transformedEvent);
+        
+        // Add all new instances to state
+        setEvents(prev => [...prev, ...allEventInstances]);
+        console.log('Event updated and recurring instances regenerated:', allEventInstances.length);
       }
     } catch (error) {
       console.error('Error updating event:', error);
@@ -204,10 +291,13 @@ export default function CalendarPage() {
     try {
       console.log('Deleting event:', eventId);
       
+      // Extract the base event ID (remove occurrence suffix if present)
+      const baseEventId = eventId.includes('-') ? eventId.split('-')[0] : eventId;
+      
       const { error } = await supabase
         .from('events')
         .delete()
-        .eq('id', eventId)
+        .eq('id', baseEventId)
         .eq('user_id', user.id);
 
       if (error) {
@@ -222,7 +312,11 @@ export default function CalendarPage() {
       }
 
       console.log('Event deleted successfully');
-      setEvents(prev => prev.filter(event => event.id !== eventId));
+      
+      // Remove all instances of this event (original + recurring)
+      setEvents(prev => prev.filter(event => 
+        !event.id.startsWith(baseEventId)
+      ));
     } catch (error) {
       console.error('Error deleting event:', error);
     } finally {
@@ -262,21 +356,33 @@ export default function CalendarPage() {
         console.log('Fetched events from database:', data);
 
         if (data) {
-          const transformedEvents: Event[] = data.map(event => ({
-            id: event.id,
-            title: event.title,
-            date: event.date,
-            startTime: event.start_time || undefined,
-            endTime: event.end_time || undefined,
-            color: event.color,
-            imageUrl: event.image_url || undefined,
-            user_id: event.user_id,
-            groupId: event.group_id,
-            notes: event.notes || undefined,
-            description: event.notes || undefined
-          }));
-          setEvents(transformedEvents);
-          console.log('Events loaded into state:', transformedEvents);
+          // Transform base events and generate recurring instances
+          const allEvents: Event[] = [];
+          
+          data.forEach(event => {
+            const transformedEvent: Event = {
+              id: event.id,
+              title: event.title,
+              date: event.date,
+              startTime: event.start_time || undefined,
+              endTime: event.end_time || undefined,
+              color: event.color,
+              imageUrl: event.image_url || undefined,
+              user_id: event.user_id,
+              groupId: event.group_id,
+              notes: event.notes || undefined,
+              description: event.notes || undefined,
+              recurrenceRule: event.recurrence_rule || undefined,
+              recurrenceEndDate: event.recurrence_end_date || undefined,
+            };
+
+            // Generate recurring events if applicable
+            const eventInstances = generateRecurringEvents(transformedEvent);
+            allEvents.push(...eventInstances);
+          });
+
+          setEvents(allEvents);
+          console.log('Events loaded into state (including recurring):', allEvents.length);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
