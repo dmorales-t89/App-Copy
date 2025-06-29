@@ -48,6 +48,7 @@ interface EventFormProps {
 export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelete, onCancel }: EventFormProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [customColors, setCustomColors] = useState<string[]>([]);
+  const [isRepeatEndDatePopoverOpen, setIsRepeatEndDatePopoverOpen] = useState(false);
   
   const form = useForm<EventFormData>({
     defaultValues: {
@@ -487,24 +488,6 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
               )}
             />
 
-            {/* Description */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-900 font-medium">Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      className="border-2 border-gray-300 hover:border-[#1a73e8] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 rounded-lg min-h-[80px] placeholder:text-gray-400 resize-none px-3 py-2 text-black"
-                      placeholder="Add description..."
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
             {/* Repeat Event Section */}
             <div className="space-y-4 pt-4 border-t border-gray-200">
               <FormField
@@ -568,7 +551,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-gray-900 font-medium">End repeat</FormLabel>
-                        <Popover>
+                        <Popover open={isRepeatEndDatePopoverOpen} onOpenChange={setIsRepeatEndDatePopoverOpen}>
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
@@ -589,7 +572,11 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                             <Calendar
                               mode="single"
                               selected={field.value || undefined}
-                              onSelect={(date) => field.onChange(date)}
+                              onSelect={(date) => {
+                                field.onChange(date);
+                                // Close the popover when a date is selected
+                                setIsRepeatEndDatePopoverOpen(false);
+                              }}
                               disabled={(date) =>
                                 date < form.getValues('startDate')
                               }
@@ -606,6 +593,24 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                 </div>
               )}
             </div>
+
+            {/* Description */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-900 font-medium">Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      className="border-2 border-gray-300 hover:border-[#1a73e8] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 rounded-lg min-h-[80px] placeholder:text-gray-400 resize-none px-3 py-2 text-black"
+                      placeholder="Add description..."
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
           </div>
 
           <div className="flex justify-between gap-3 pt-6 border-t border-gray-200">
