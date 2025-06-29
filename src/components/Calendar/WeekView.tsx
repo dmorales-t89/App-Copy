@@ -141,9 +141,9 @@ export function WeekView({
       <div className="flex-1 overflow-y-auto">
         <div className="grid grid-cols-[80px_1fr]">
           {/* Time labels */}
-          <div className="divide-y divide-gray-200 border-r border-gray-200">
+          <div className="border-r border-gray-200">
             {hours.map((hour) => (
-              <div key={hour} className="h-16 p-2 bg-gray-50 flex items-start">
+              <div key={hour} className="h-16 p-2 bg-gray-50 flex items-start border-b border-gray-200">
                 <span className="text-xs text-[#011936]/70 font-medium">
                   {formatHourLabel(hour)}
                 </span>
@@ -154,7 +154,7 @@ export function WeekView({
           {/* Time slots grid */}
           <div className="grid grid-cols-7 divide-x divide-gray-200">
             {weekDays.map((day) => (
-              <div key={day.toString()} className="divide-y divide-gray-200">
+              <div key={day.toString()}>
                 {hours.map((hour) => {
                   const hourEvents = getHourEvents(day, hour);
                   const isTarget = isDropTarget(day, hour);
@@ -163,7 +163,7 @@ export function WeekView({
                     <div
                       key={hour}
                       className={cn(
-                        "h-16 p-1 cursor-pointer relative group transition-colors",
+                        "h-16 p-1 cursor-pointer relative group transition-colors border-b border-gray-200",
                         isTarget 
                           ? "bg-blue-100 border-2 border-blue-300" 
                           : "hover:bg-[#C2EABD]/5 border-2 border-transparent"
