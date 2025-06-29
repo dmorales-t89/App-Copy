@@ -1,3 +1,5 @@
+import { addDays } from 'date-fns';
+
 interface CalendarEvent {
   title: string;
   date: Date;
@@ -138,15 +140,17 @@ export async function processCalendarImage(file: File): Promise<CalendarEvent[]>
       let eventDate: Date;
       
       try {
-        eventDate = new Date(event.date);
+        // Parse the date and add one day to compensate for timezone shift
+        eventDate = addDays(new Date(event.date), 1);
+        
         // Validate the date
         if (isNaN(eventDate.getTime())) {
-          console.warn('Invalid date detected:', event.date, 'Using current date');
-          eventDate = new Date();
+          console.warn('Invalid date detected:', event.date, 'Using current date + 1 day');
+          eventDate = addDays(new Date(), 1);
         }
       } catch (error) {
-        console.warn('Error parsing date:', event.date, 'Using current date');
-        eventDate = new Date();
+        console.warn('Error parsing date:', event.date, 'Using current date + 1 day');
+        eventDate = addDays(new Date(), 1);
       }
       
       return {
@@ -164,7 +168,7 @@ export async function processCalendarImage(file: File): Promise<CalendarEvent[]>
       // If no structured events were found, create a fallback event with the extracted text
       const fallbackEvent: CalendarEvent = {
         title: "Extracted Information",
-        date: new Date(),
+        date: addDays(new Date(), 1), // Also add one day to fallback event
         description: result.text ? 
           `Extracted text: ${result.text.substring(0, 500)}${result.text.length > 500 ? '...' : ''}` : 
           "No events found in the image. Please create your event manually with the details you can see in the image."
