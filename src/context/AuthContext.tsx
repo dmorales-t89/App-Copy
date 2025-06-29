@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { isSupabaseConfigured } from '@/lib/supabase';
@@ -27,6 +27,9 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const [error, setError] = useState<string | null>(null);
   const [isConfigured] = useState(isSupabaseConfigured());
   const router = useRouter();
+  
+  // Add ref to prevent redundant initialization calls
+  const hasInitialized = useRef(false);
 
   // Memoize Supabase client to prevent recreation on every render
   const supabase = useMemo(() => {
@@ -40,6 +43,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       setLoading(false);
       return;
     }
+
+    // Prevent redundant initialization calls
+    if (hasInitialized.current) {
+      return;
+    }
+
+    hasInitialized.current = true;
 
     // Get initial session with timeout
     const getInitialSession = async () => {
