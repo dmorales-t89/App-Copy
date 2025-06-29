@@ -64,6 +64,20 @@ export default function CalendarPage() {
   // Maximum number of recurring events to generate (safety limit)
   const MAX_OCCURRENCES = 365;
 
+  // Helper function to extract base event ID from recurring event ID
+  const extractBaseEventId = (eventId: string): string => {
+    // If it's a recurring event ID (format: uuid-yyyy-MM-dd), extract the UUID part
+    if (eventId.includes('-') && eventId.length > 36) {
+      // Find the last occurrence of a date pattern (yyyy-MM-dd)
+      const datePattern = /-\d{4}-\d{2}-\d{2}$/;
+      if (datePattern.test(eventId)) {
+        return eventId.replace(datePattern, '');
+      }
+    }
+    // If it's already a base UUID, return as is
+    return eventId;
+  };
+
   const generateRecurringEvents = (baseEvent: Event): Event[] => {
     if (!baseEvent.recurrenceRule || !baseEvent.recurrenceEndDate) {
       return [baseEvent];
@@ -206,7 +220,7 @@ export default function CalendarPage() {
       console.log('Updating event:', eventId, 'with data:', eventData);
       
       // Extract the base event ID (remove occurrence suffix if present)
-      const baseEventId = eventId.includes('-') ? eventId.split('-')[0] : eventId;
+      const baseEventId = extractBaseEventId(eventId);
       
       // Validate UUID before making database call
       if (!isValidUuid(baseEventId)) {
@@ -300,7 +314,9 @@ export default function CalendarPage() {
       console.log('Deleting event:', eventId);
       
       // Extract the base event ID (remove occurrence suffix if present)
-      const baseEventId = eventId.includes('-') ? eventId.split('-')[0] : eventId;
+      const baseEventId = extractBaseEventId(eventId);
+      
+      console.log('Base event ID extracted:', baseEventId);
       
       // Validate UUID before making database call
       if (!isValidUuid(baseEventId)) {
