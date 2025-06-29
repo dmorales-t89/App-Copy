@@ -4,7 +4,7 @@ import { motion, useSpring, type SpringOptions } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FileUpload } from '@/components/ui/file-upload';
-import { ImageIcon, CalendarIcon, ClockIcon, CheckCircledIcon } from '@radix-ui/react-icons';
+import { ImageIcon, CalendarIcon, ClockIcon, CheckCircledIcon, MousePointerClickIcon } from '@radix-ui/react-icons';
 import { Loader2Icon } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import Header from '@/components/header';
@@ -178,9 +178,9 @@ export default function Home() {
                   description: "Our AI accurately extracts event details from any image format - screenshots, photos, or PDFs."
                 },
                 {
-                  icon: CalendarIcon,
-                  title: "Multi-Calendar Support",
-                  description: "Seamlessly sync with Google Calendar, Apple Calendar, Outlook, and more."
+                  icon: MousePointerClickIcon,
+                  title: "Intuitive Drag-and-Drop",
+                  description: "Easily reschedule events by dragging them to new dates and times. Organize your calendar with simple, intuitive gestures."
                 },
                 {
                   icon: ClockIcon,
@@ -296,7 +296,7 @@ export default function Home() {
                 "Save hours of manual data entry each week",
                 "Reduce scheduling errors with AI accuracy",
                 "Access your schedule from any device",
-                "Integrate with your favorite calendar apps",
+                "Drag and drop events to reschedule instantly",
                 "Keep your data secure with encryption",
                 "Get 24/7 customer support"
               ].map((benefit, index) => (
@@ -345,8 +345,8 @@ export default function Home() {
                   a: "Our AI is highly accurate and continuously improving. It's specifically trained to recognize common date formats, times, locations, and event details. You can always review and edit the extracted information before adding it to your calendar."
                 },
                 {
-                  q: "Which calendar apps are supported?",
-                  a: "PicSchedule integrates with all major calendar applications including Google Calendar, Apple Calendar, Microsoft Outlook, and any calendar that supports .ics files."
+                  q: "Can I reschedule events after they're created?",
+                  a: "Absolutely! PicSchedule features intuitive drag-and-drop functionality that lets you easily move events to different dates and times. Simply drag an event to its new position on the calendar."
                 },
                 {
                   q: "Is my data secure?",

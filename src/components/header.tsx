@@ -65,12 +65,6 @@ export default function Header() {
                 <Link href="#features" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
                   Features
                 </Link>
-                <Link href="#pricing" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
-                  Pricing
-                </Link>
-                <Link href="#about" className="text-[#C2EABD]/80 hover:text-[#C2EABD] transition-colors">
-                  About
-                </Link>
               </>
             )}
           </nav>
