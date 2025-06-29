@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FileUpload } from '@/components/ui/file-upload';
 import { ImageIcon, CalendarIcon, ClockIcon, CheckCircledIcon, CursorArrowIcon } from '@radix-ui/react-icons';
-import { Loader2Icon } from 'lucide-react';
+import { Loader2Icon, Clock, MapPin, FileText } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import Header from '@/components/header';
 import { processCalendarImage } from '@/lib/imageProcessing';
@@ -17,7 +17,8 @@ import { useAuth } from '@/context/AuthContext';
 interface ExtractedEvent {
   title: string;
   date: Date;
-  time?: string;
+  startTime?: string;
+  endTime?: string;
   description?: string;
 }
 
@@ -91,6 +92,26 @@ export default function Home() {
     uploadRotateX.set(rotateXValue);
     uploadRotateY.set(rotateYValue);
   }
+
+  // Helper function to format time for display
+  const formatTimeForDisplay = (time?: string) => {
+    if (!time) return null;
+    
+    try {
+      // If it's already in 12-hour format, return as is
+      if (time.toLowerCase().includes('am') || time.toLowerCase().includes('pm')) {
+        return time;
+      }
+      
+      // Convert 24-hour format to 12-hour format
+      const [hours, minutes] = time.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    } catch (error) {
+      return time; // Return original if parsing fails
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#011936] relative overflow-hidden">
@@ -252,19 +273,80 @@ export default function Home() {
                   )}
 
                   {extractedEvents.length > 0 && (
-                    <div className="mt-8 space-y-4">
+                    <div className="mt-8 space-y-6">
                       <h3 className="text-xl font-semibold mb-4 text-[#C2EABD]">Extracted Events</h3>
                       {extractedEvents.map((event, index) => (
-                        <Card key={index} className="p-4 bg-white/5 border border-[#C2EABD]/20">
-                          <h4 className="font-medium text-[#C2EABD]">{event.title}</h4>
-                          <p className="text-sm text-[#C2EABD]/80">
-                            {event.date.toLocaleDateString()} {event.time}
-                          </p>
-                          {event.description && (
-                            <p className="text-sm text-[#C2EABD]/80 mt-2">{event.description}</p>
-                          )}
+                        <Card key={index} className="p-6 bg-white/5 border border-[#C2EABD]/20 hover:bg-white/10 transition-colors">
+                          <div className="space-y-4">
+                            {/* Event Title */}
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-[#C2EABD]/20 rounded-lg">
+                                <CalendarIcon className="w-5 h-5 text-[#C2EABD]" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-lg text-[#C2EABD]">{event.title}</h4>
+                                <p className="text-sm text-[#C2EABD]/70 mt-1">
+                                  {event.date.toLocaleDateString('en-US', { 
+                                    weekday: 'long', 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Time Information */}
+                            {(event.startTime || event.endTime) && (
+                              <div className="flex items-center gap-3 pl-11">
+                                <Clock className="w-4 h-4 text-[#C2EABD]/70" />
+                                <div className="text-sm text-[#C2EABD]/80">
+                                  {event.startTime && event.endTime ? (
+                                    <span>
+                                      {formatTimeForDisplay(event.startTime)} - {formatTimeForDisplay(event.endTime)}
+                                    </span>
+                                  ) : event.startTime ? (
+                                    <span>Starts at {formatTimeForDisplay(event.startTime)}</span>
+                                  ) : (
+                                    <span>Ends at {formatTimeForDisplay(event.endTime)}</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Description */}
+                            {event.description && (
+                              <div className="flex items-start gap-3 pl-11">
+                                <FileText className="w-4 h-4 text-[#C2EABD]/70 mt-0.5" />
+                                <div className="text-sm text-[#C2EABD]/80 leading-relaxed">
+                                  {event.description}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* AI Confidence Indicator */}
+                            <div className="flex items-center gap-2 pl-11 pt-2 border-t border-[#C2EABD]/20">
+                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                              <span className="text-xs text-[#C2EABD]/60">
+                                AI extracted with high confidence
+                              </span>
+                            </div>
+                          </div>
                         </Card>
                       ))}
+                      
+                      {/* Call to Action */}
+                      <div className="text-center pt-4">
+                        <p className="text-[#C2EABD]/80 mb-4">
+                          Ready to add these events to your calendar?
+                        </p>
+                        <Button 
+                          onClick={handleGetStarted}
+                          className="bg-[#C2EABD] hover:bg-[#A3D5FF] text-[#011936] px-6 py-3 font-medium"
+                        >
+                          Sign Up to Save Events
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </Card>
