@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack: (config, { isServer }) => {
-    // Fixes npm packages that depend on `fs` module
+    // ✅ Fix for Supabase WebSocket warnings and build issues
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -11,10 +11,25 @@ const nextConfig = {
         child_process: false,
         tls: false,
         ws: false,
+        // ✅ Additional fallbacks for Supabase dependencies
+        bufferutil: false,
+        'utf-8-validate': false,
       };
     }
     
+    // ✅ Suppress specific warnings from Supabase realtime
+    config.ignoreWarnings = [
+      {
+        module: /node_modules\/@supabase\/realtime-js/,
+        message: /Critical dependency: the request of a dependency is an expression/,
+      },
+    ];
+    
     return config;
+  },
+  // ✅ Experimental features for better build performance
+  experimental: {
+    optimizePackageImports: ['@supabase/supabase-js'],
   },
 }
 

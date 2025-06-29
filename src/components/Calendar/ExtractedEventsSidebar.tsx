@@ -30,6 +30,9 @@ interface EventFormData {
   endTime: string;
   color: string;
   groupId: string;
+  isRepeating?: boolean; // ✅ Made optional
+  repeatFrequency?: 'daily' | 'weekly' | 'monthly' | ''; // ✅ Made optional
+  repeatEndDate?: Date | null; // ✅ Made optional
 }
 
 interface ExtractedEventsSidebarProps {
@@ -37,9 +40,9 @@ interface ExtractedEventsSidebarProps {
   events: ExtractedEvent[];
   groups: Group[];
   onClose: () => void;
-  onConfirmEvent: (eventData: EventFormData) => void;
+  onConfirmEvent: (eventData: EventFormData) => Promise<void>; // ✅ Updated to async
   onDiscardEvent: (index: number) => void;
-  onConfirmAll: () => void;
+  onConfirmAll: () => Promise<void>; // ✅ Updated to async
   onDiscardAll: () => void;
 }
 
@@ -53,8 +56,8 @@ export function ExtractedEventsSidebar({
   onConfirmAll,
   onDiscardAll,
 }: ExtractedEventsSidebarProps) {
-  const handleConfirmEvent = (eventData: EventFormData, index: number) => {
-    onConfirmEvent(eventData);
+  const handleConfirmEvent = async (eventData: EventFormData, index: number) => {
+    await onConfirmEvent(eventData); // ✅ Now properly awaits async function
     onDiscardEvent(index); // Remove from extracted events after confirming
   };
 

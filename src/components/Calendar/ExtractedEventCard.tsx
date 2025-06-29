@@ -41,6 +41,9 @@ interface ExtractedEventCardProps {
     endTime: string;
     color: string;
     groupId: string;
+    isRepeating?: boolean; // ✅ Made optional
+    repeatFrequency?: 'daily' | 'weekly' | 'monthly' | ''; // ✅ Made optional
+    repeatEndDate?: Date | null; // ✅ Made optional
   }) => void;
   onDiscard: () => void;
   className?: string;
@@ -202,6 +205,10 @@ export function ExtractedEventCard({
       endTime,
       color: selectedColor,
       groupId: selectedGroupId,
+      // ✅ Optional fields with defaults
+      isRepeating: false,
+      repeatFrequency: '',
+      repeatEndDate: null,
     });
   };
 
