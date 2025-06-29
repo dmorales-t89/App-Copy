@@ -1,9 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
@@ -31,12 +30,6 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   // Add ref to prevent redundant initialization calls
   const hasInitialized = useRef(false);
 
-  // Memoize Supabase client to prevent recreation on every render
-  const supabase = useMemo(() => {
-    if (!isConfigured) return null;
-    return createClientComponentClient();
-  }, [isConfigured]);
-
   useEffect(() => {
     if (!isConfigured || !supabase) {
       console.warn('Supabase not configured - skipping auth initialization');
@@ -51,26 +44,42 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
 
     hasInitialized.current = true;
 
-    // Get initial session with timeout
+    // Get initial session with timeout and rate limit handling
     const getInitialSession = async () => {
       try {
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout')), 5000)
+          setTimeout(() => reject(new Error('Session timeout')), 10000) // Increased timeout
         );
 
         const sessionPromise = supabase.auth.getSession();
         const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
         
         if (error) {
-          console.error('Error getting session:', error);
-          setError(`Authentication error: ${error.message}`);
+          // Handle rate limit errors gracefully
+          if (error.message?.includes('rate limit') || error.status === 429) {
+            console.warn('Rate limit encountered, will retry authentication later');
+            setError('Authentication service is busy. Please wait a moment and try again.');
+            // Set a longer timeout before retrying
+            setTimeout(() => {
+              setError(null);
+              hasInitialized.current = false; // Allow retry
+            }, 30000); // 30 second delay
+          } else {
+            console.error('Error getting session:', error);
+            setError(`Authentication error: ${error.message}`);
+          }
         } else {
           setSession(session);
           setUser(session?.user ?? null);
+          setError(null);
         }
       } catch (err) {
         console.error('Session initialization error:', err);
-        setError('Authentication service is slow to respond. Please try again.');
+        if (err instanceof Error && err.message.includes('timeout')) {
+          setError('Authentication service is slow to respond. Please try refreshing the page.');
+        } else {
+          setError('Authentication service encountered an error. Please try again.');
+        }
       } finally {
         setLoading(false);
       }
@@ -78,32 +87,37 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
 
     getInitialSession();
 
-    // Listen for auth changes with error handling
+    // Listen for auth changes with error handling and rate limit protection
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        setError(null);
+        try {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+          setError(null);
 
-        // Handle successful authentication
-        if (event === 'SIGNED_IN' && session) {
-          // Clear URL parameters after OAuth callback
-          if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href);
-            if (url.hash || url.searchParams.has('access_token') || url.searchParams.has('code')) {
-              window.history.replaceState({}, document.title, window.location.pathname);
+          // Handle successful authentication
+          if (event === 'SIGNED_IN' && session) {
+            // Clear URL parameters after OAuth callback
+            if (typeof window !== 'undefined') {
+              const url = new URL(window.location.href);
+              if (url.hash || url.searchParams.has('access_token') || url.searchParams.has('code')) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+              }
             }
+            
+            // Small delay to ensure state is updated before redirect
+            setTimeout(() => {
+              router.replace('/calendar');
+            }, 100);
           }
-          
-          // Small delay to ensure state is updated before redirect
-          setTimeout(() => {
-            router.replace('/calendar');
-          }, 50);
-        }
 
-        if (event === 'SIGNED_OUT') {
-          router.replace('/login');
+          if (event === 'SIGNED_OUT') {
+            router.replace('/login');
+          }
+        } catch (err) {
+          console.error('Auth state change error:', err);
+          // Don't set error state for auth state changes to prevent UI disruption
         }
       }
     );
@@ -111,7 +125,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, isConfigured, supabase]);
+  }, [router, isConfigured]);
 
   const signInWithGoogle = useCallback(async (): Promise<{ error: AuthError | null }> => {
     if (!supabase) {
@@ -136,6 +150,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         }
       });
       
+      // Handle rate limit errors
+      if (result.error?.status === 429 || result.error?.message?.includes('rate limit')) {
+        setError('Too many authentication attempts. Please wait a moment and try again.');
+        return { error: result.error };
+      }
+      
       return { error: result.error };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -144,7 +164,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []);
   
   const signInWithEmail = useCallback(async (email: string, password: string): Promise<{ error: AuthError | null }> => {
     if (!supabase) {
@@ -158,6 +178,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       setLoading(true);
 
       const result = await supabase.auth.signInWithPassword({ email, password });
+      
+      // Handle rate limit errors
+      if (result.error?.status === 429 || result.error?.message?.includes('rate limit')) {
+        setError('Too many authentication attempts. Please wait a moment and try again.');
+        return { error: result.error };
+      }
+      
       return { error: result.error };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -166,7 +193,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   const signUpWithEmail = async (email: string, password: string) => {
     if (!supabase) {
@@ -188,8 +215,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       });
 
       if (error) {
-        console.error('Email sign-up error:', error);
-        setError(error.message);
+        // Handle rate limit errors
+        if (error.status === 429 || error.message?.includes('rate limit')) {
+          setError('Too many authentication attempts. Please wait a moment and try again.');
+        } else {
+          console.error('Email sign-up error:', error);
+          setError(error.message);
+        }
       }
 
       return { error };
@@ -214,8 +246,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('Sign-out error:', error);
-        setError(error.message);
+        // Handle rate limit errors
+        if (error.status === 429 || error.message?.includes('rate limit')) {
+          setError('Too many requests. Please wait a moment and try again.');
+        } else {
+          console.error('Sign-out error:', error);
+          setError(error.message);
+        }
       }
 
       return { error };
