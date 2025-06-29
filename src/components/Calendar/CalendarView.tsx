@@ -9,9 +9,29 @@ interface CalendarViewProps {
   onAddEvent: (date: Date) => void;
   onEventClick: (event: Event) => void;
   groups: Array<{ id: string; name: string; color: string }>;
+  onEventDragStart?: (eventId: string) => void;
+  onEventDragEnd?: () => void;
+  onEventDrop?: (newDate: Date) => void;
+  onDragOver?: (date: Date) => void;
+  onDragLeave?: () => void;
+  draggedEventId?: string | null;
+  dropTargetDate?: Date | null;
 }
 
-export function CalendarView({ currentDate, events, onAddEvent, onEventClick, groups }: CalendarViewProps) {
+export function CalendarView({ 
+  currentDate, 
+  events, 
+  onAddEvent, 
+  onEventClick, 
+  groups,
+  onEventDragStart,
+  onEventDragEnd,
+  onEventDrop,
+  onDragOver,
+  onDragLeave,
+  draggedEventId,
+  dropTargetDate
+}: CalendarViewProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart = startOfWeek(monthStart);
@@ -51,6 +71,42 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, eventId: string) => {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', eventId);
+    onEventDragStart?.(eventId);
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    e.preventDefault();
+    onEventDragEnd?.();
+  };
+
+  const handleDragOver = (e: React.DragEvent, date: Date) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    onDragOver?.(date);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    onDragLeave?.();
+  };
+
+  const handleDrop = (e: React.DragEvent, date: Date) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const eventId = e.dataTransfer.getData('text/plain');
+    if (eventId && onEventDrop) {
+      onEventDrop(date);
+    }
+  };
+
+  const isDropTarget = (date: Date) => {
+    return dropTargetDate && isSameDay(dropTargetDate, date);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Week day headers */}
@@ -72,16 +128,22 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
           const isCurrentMonth = isSameMonth(day, currentDate);
           const isDayToday = isToday(day);
           const isSelected = isSameDay(day, currentDate);
+          const isTarget = isDropTarget(day);
 
           return (
             <div
               key={day.toString()}
               className={cn(
-                "border-r border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50 transition-colors last:border-r-0 group",
+                "border-r border-b border-gray-200 p-2 cursor-pointer transition-colors last:border-r-0 group",
                 !isCurrentMonth && "bg-gray-50/50",
+                isTarget && "bg-blue-100 border-2 border-blue-300",
+                !isTarget && "hover:bg-gray-50",
                 "flex flex-col min-h-[120px] relative"
               )}
               onClick={() => onAddEvent(day)}
+              onDragOver={(e) => handleDragOver(e, day)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, day)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span
@@ -105,11 +167,17 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
                     className="relative group/event"
                   >
                     <div
-                      className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                      className={cn(
+                        "text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm",
+                        draggedEventId === event.id && "opacity-50"
+                      )}
                       style={{ 
                         backgroundColor: getEventColor(event), 
                         color: '#ffffff'
                       }}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, event.id)}
+                      onDragEnd={handleDragEnd}
                       onClick={(e) => {
                         e.stopPropagation();
                         onEventClick(event);
@@ -133,8 +201,8 @@ export function CalendarView({ currentDate, events, onAddEvent, onEventClick, gr
                           {formatEventTime(event)} - {formatEventEndTime(event)}
                         </div>
                       )}
-                      {event.description && (
-                        <div className="text-gray-300 mt-1">{event.description}</div>
+                      {(event.description || event.notes) && (
+                        <div className="text-gray-300 mt-1">{event.description || event.notes}</div>
                       )}
                       <div className="text-gray-400 text-xs mt-1">
                         {groups.find(g => g.id === event.groupId)?.name || 'Calendar'}

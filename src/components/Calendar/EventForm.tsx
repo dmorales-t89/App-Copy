@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Clock, Trash2, Palette } from 'lucide-react';
+import { CalendarIcon, Clock, Trash2, Palette, Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Event } from '@/types/calendar';
@@ -31,6 +31,9 @@ interface EventFormData {
   endTime: string;
   color: string;
   groupId: string;
+  isRepeating: boolean;
+  repeatFrequency: 'daily' | 'weekly' | 'monthly' | '';
+  repeatEndDate: Date | null;
 }
 
 interface EventFormProps {
@@ -57,6 +60,9 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
       endTime: editingEvent?.endTime ? format(new Date(`2000-01-01T${editingEvent.endTime}`), 'HH:mm') : format(addHours(initialDate, 1), 'HH:mm'),
       color: editingEvent?.color || groups[0]?.color || '#AEC6CF',
       groupId: editingEvent?.groupId || groups[0]?.id || '1',
+      isRepeating: !!(editingEvent?.recurrenceRule),
+      repeatFrequency: editingEvent?.recurrenceRule || '',
+      repeatEndDate: editingEvent?.recurrenceEndDate ? new Date(editingEvent.recurrenceEndDate) : null,
     },
   });
 
@@ -73,6 +79,9 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
         endTime: editingEvent.endTime ? format(new Date(`2000-01-01T${editingEvent.endTime}`), 'HH:mm') : '10:00',
         color: editingEvent.color || groups[0]?.color || '#AEC6CF',
         groupId: editingEvent.groupId || groups[0]?.id || '1',
+        isRepeating: !!(editingEvent.recurrenceRule),
+        repeatFrequency: editingEvent.recurrenceRule || '',
+        repeatEndDate: editingEvent.recurrenceEndDate ? new Date(editingEvent.recurrenceEndDate) : null,
       });
     } else {
       form.reset({
@@ -85,6 +94,9 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
         endTime: format(addHours(initialDate, 1), 'HH:mm'),
         color: groups[0]?.color || '#AEC6CF',
         groupId: groups[0]?.id || '1',
+        isRepeating: false,
+        repeatFrequency: '',
+        repeatEndDate: null,
       });
     }
   }, [initialDate, editingEvent, form, groups]);
@@ -492,6 +504,108 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
                 </FormItem>
               )}
             />
+
+            {/* Repeat Event Section */}
+            <div className="space-y-4 pt-4 border-t border-gray-200">
+              <FormField
+                control={form.control}
+                name="isRepeating"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between py-2">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-gray-900 font-medium flex items-center gap-2">
+                        <Repeat className="h-4 w-4" />
+                        Repeat event
+                      </FormLabel>
+                      <FormDescription className="text-gray-600 text-sm">
+                        Create recurring events automatically
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="data-[state=checked]:bg-[#1a73e8]"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {form.watch('isRepeating') && (
+                <div className="space-y-4 pl-6 border-l-2 border-gray-200">
+                  <FormField
+                    control={form.control}
+                    name="repeatFrequency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-900 font-medium">Repeat frequency</FormLabel>
+                        <FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] px-3 py-3 h-auto text-black">
+                              <SelectValue placeholder="Select frequency" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
+                              <SelectItem value="daily" className="hover:bg-gray-50">
+                                <span className="text-gray-900">Daily</span>
+                              </SelectItem>
+                              <SelectItem value="weekly" className="hover:bg-gray-50">
+                                <span className="text-gray-900">Weekly</span>
+                              </SelectItem>
+                              <SelectItem value="monthly" className="hover:bg-gray-50">
+                                <span className="text-gray-900">Monthly</span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="repeatEndDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-900 font-medium">End repeat</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal border-2 border-gray-300 hover:border-[#1a73e8] hover:bg-gray-50 focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 px-3 py-3 h-auto text-black",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
+                                <span className="text-gray-900 font-medium">
+                                  {field.value ? format(field.value, "EEEE, MMMM d, yyyy") : "Select end date"}
+                                </span>
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value || undefined}
+                              onSelect={(date) => field.onChange(date)}
+                              disabled={(date) =>
+                                date < form.getValues('startDate')
+                              }
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormDescription className="text-gray-600 text-sm">
+                          When should the recurring events stop?
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-between gap-3 pt-6 border-t border-gray-200">

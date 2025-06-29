@@ -38,6 +38,9 @@ interface EventFormData {
   color: string;
   groupId: string;
   description: string;
+  isRepeating: boolean;
+  repeatFrequency: 'daily' | 'weekly' | 'monthly' | '';
+  repeatEndDate: Date | null;
 }
 
 export default function CalendarPage() {

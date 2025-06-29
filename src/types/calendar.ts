@@ -10,6 +10,9 @@ export interface Event {
   color: string;
   user_id?: string;
   imageUrl?: string;
+  isDragging?: boolean;
+  recurrenceRule?: 'daily' | 'weekly' | 'monthly';
+  recurrenceEndDate?: string;
 }
 
 export interface CalendarEvent extends Event {

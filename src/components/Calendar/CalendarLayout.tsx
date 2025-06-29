@@ -35,6 +35,9 @@ interface EventFormData {
   endTime: string;
   color: string;
   groupId: string;
+  isRepeating: boolean;
+  repeatFrequency: 'daily' | 'weekly' | 'monthly' | '';
+  repeatEndDate: Date | null;
 }
 
 interface ExtractedEvent {
@@ -78,6 +81,11 @@ export function CalendarLayout({
   // New state for extracted events
   const [extractedEvents, setExtractedEvents] = useState<ExtractedEvent[]>([]);
   const [showExtractedEventsSidebar, setShowExtractedEventsSidebar] = useState(false);
+
+  // Drag and drop state
+  const [draggedEventId, setDraggedEventId] = useState<string | null>(null);
+  const [dropTargetDate, setDropTargetDate] = useState<Date | null>(null);
+  const [dropTargetHour, setDropTargetHour] = useState<number | null>(null);
 
   const { signOut } = useAuth();
   const router = useRouter();
@@ -163,6 +171,9 @@ export function CalendarLayout({
         endTime: event.endTime || (event.startTime ? format(new Date(`2000-01-01T${event.startTime}`).getTime() + 60 * 60 * 1000, 'HH:mm') : '10:00'),
         color: groups[0]?.color || '#AEC6CF',
         groupId: groups[0]?.id || '1',
+        isRepeating: false,
+        repeatFrequency: '',
+        repeatEndDate: null,
       };
       
       await onCreateEvent(eventData);
@@ -182,6 +193,55 @@ export function CalendarLayout({
     router.replace('/');
   };
 
+  // Drag and drop handlers
+  const handleEventDragStart = (eventId: string) => {
+    setDraggedEventId(eventId);
+  };
+
+  const handleEventDragEnd = () => {
+    setDraggedEventId(null);
+    setDropTargetDate(null);
+    setDropTargetHour(null);
+  };
+
+  const handleEventDrop = async (newDate: Date, newHour?: number) => {
+    if (!draggedEventId) return;
+
+    const draggedEvent = events.find(e => e.id === draggedEventId);
+    if (!draggedEvent) return;
+
+    // Create updated event data
+    const updatedEventData: EventFormData = {
+      title: draggedEvent.title,
+      description: draggedEvent.description || draggedEvent.notes || '',
+      startDate: newDate,
+      endDate: newDate,
+      isAllDay: !draggedEvent.startTime,
+      startTime: newHour !== undefined ? `${newHour.toString().padStart(2, '0')}:00` : (draggedEvent.startTime || '09:00'),
+      endTime: newHour !== undefined ? `${(newHour + 1).toString().padStart(2, '0')}:00` : (draggedEvent.endTime || '10:00'),
+      color: draggedEvent.color,
+      groupId: draggedEvent.groupId,
+      isRepeating: false,
+      repeatFrequency: '',
+      repeatEndDate: null,
+    };
+
+    await onUpdateEvent(draggedEventId, updatedEventData);
+    handleEventDragEnd();
+  };
+
+  const handleDragOver = (date: Date, hour?: number) => {
+    setDropTargetDate(date);
+    if (hour !== undefined) {
+      setDropTargetHour(hour);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDropTargetDate(null);
+    setDropTargetHour(null);
+  };
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (event.description && event.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -198,7 +258,12 @@ export function CalendarLayout({
             initial={{ x: -280, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -280, opacity: 0 }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            transition={{ 
+              type: "spring", 
+              damping: 20, 
+              stiffness: 150,
+              mass: 1
+            }}
             className="w-[280px] border-r border-gray-200 bg-gray-50 overflow-y-auto"
           >
             <div className="p-4 space-y-6">
@@ -403,6 +468,13 @@ export function CalendarLayout({
               onAddEvent={handleDayClick}
               onEventClick={handleEventClick}
               groups={groups}
+              onEventDragStart={handleEventDragStart}
+              onEventDragEnd={handleEventDragEnd}
+              onEventDrop={handleEventDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              draggedEventId={draggedEventId}
+              dropTargetDate={dropTargetDate}
             />
           ) : (
             <WeekView
@@ -410,6 +482,14 @@ export function CalendarLayout({
               events={filteredEvents}
               onTimeSlotClick={handleTimeSlotClick}
               onEventClick={handleEventClick}
+              onEventDragStart={handleEventDragStart}
+              onEventDragEnd={handleEventDragEnd}
+              onEventDrop={handleEventDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              draggedEventId={draggedEventId}
+              dropTargetDate={dropTargetDate}
+              dropTargetHour={dropTargetHour}
             />
           )}
         </div>

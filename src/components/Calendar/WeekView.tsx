@@ -8,9 +8,30 @@ interface WeekViewProps {
   events: Event[];
   onTimeSlotClick: (date: Date, hour: number) => void;
   onEventClick: (event: Event) => void;
+  onEventDragStart?: (eventId: string) => void;
+  onEventDragEnd?: () => void;
+  onEventDrop?: (newDate: Date, newHour?: number) => void;
+  onDragOver?: (date: Date, hour?: number) => void;
+  onDragLeave?: () => void;
+  draggedEventId?: string | null;
+  dropTargetDate?: Date | null;
+  dropTargetHour?: number | null;
 }
 
-export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }: WeekViewProps) {
+export function WeekView({ 
+  currentDate, 
+  events, 
+  onTimeSlotClick, 
+  onEventClick,
+  onEventDragStart,
+  onEventDragEnd,
+  onEventDrop,
+  onDragOver,
+  onDragLeave,
+  draggedEventId,
+  dropTargetDate,
+  dropTargetHour
+}: WeekViewProps) {
   const weekStart = startOfWeek(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   
@@ -56,6 +77,42 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, eventId: string) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', eventId);
+    onEventDragStart?.(eventId);
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    e.preventDefault();
+    onEventDragEnd?.();
+  };
+
+  const handleDragOver = (e: React.DragEvent, date: Date, hour: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    onDragOver?.(date, hour);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    onDragLeave?.();
+  };
+
+  const handleDrop = (e: React.DragEvent, date: Date, hour: number) => {
+    e.preventDefault();
+    const eventId = e.dataTransfer.getData('text/plain');
+    if (eventId && onEventDrop) {
+      onEventDrop(date, hour);
+    }
+  };
+
+  const isDropTarget = (date: Date, hour: number) => {
+    return dropTargetDate && 
+           isSameDay(dropTargetDate, date) && 
+           dropTargetHour === hour;
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Week header */}
@@ -99,23 +156,36 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
               <div key={day.toString()} className="divide-y divide-gray-200">
                 {hours.map((hour) => {
                   const hourEvents = getHourEvents(day, hour);
+                  const isTarget = isDropTarget(day, hour);
+                  
                   return (
                     <div
                       key={hour}
-                      className="h-16 p-1 hover:bg-[#C2EABD]/5 cursor-pointer relative group"
+                      className={cn(
+                        "h-16 p-1 cursor-pointer relative group transition-colors",
+                        isTarget 
+                          ? "bg-blue-100 border-2 border-blue-300" 
+                          : "hover:bg-[#C2EABD]/5 border-2 border-transparent"
+                      )}
                       onClick={() => onTimeSlotClick(day, hour)}
+                      onDragOver={(e) => handleDragOver(e, day, hour)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, day, hour)}
                     >
                       {hourEvents.map((event, index) => (
                         <div
                           key={event.id}
-                          className="absolute inset-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                          className="absolute inset-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
                           style={{ 
                             backgroundColor: getEventColor(event), 
                             color: '#ffffff',
                             top: `${4 + index * 2}px`,
-                            zIndex: 10 + index
+                            zIndex: 10 + index,
+                            opacity: draggedEventId === event.id ? 0.5 : 1
                           }}
-                          title={`${event.title}${event.startTime ? ` at ${formatEventTime(event.startTime)}` : ''}`}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, event.id)}
+                          onDragEnd={handleDragEnd}
                           onClick={(e) => {
                             e.stopPropagation();
                             onEventClick(event);
@@ -127,6 +197,24 @@ export function WeekView({ currentDate, events, onTimeSlotClick, onEventClick }:
                               {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
                             </div>
                           )}
+                          
+                          {/* Tooltip on hover */}
+                          <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">
+                            <div className="font-medium">{event.title}</div>
+                            {event.startTime && event.endTime && (
+                              <div className="text-gray-300">
+                                {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
+                              </div>
+                            )}
+                            {(event.description || event.notes) && (
+                              <div className="text-gray-300 mt-1">
+                                {event.description || event.notes}
+                              </div>
+                            )}
+                            <div className="text-gray-400 text-xs mt-1">
+                              Click to edit
+                            </div>
+                          </div>
                         </div>
                       ))}
                       {/* Hover indicator */}
