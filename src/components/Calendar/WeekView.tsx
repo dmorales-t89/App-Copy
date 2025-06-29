@@ -1,5 +1,6 @@
 import React from 'react';
 import { format, addDays, startOfWeek, parseISO, isSameDay, parse } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -172,51 +173,62 @@ export function WeekView({
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, day, hour)}
                     >
-                      {hourEvents.map((event, index) => (
-                        <div
-                          key={event.id}
-                          className="absolute inset-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
-                          style={{ 
-                            backgroundColor: getEventColor(event), 
-                            color: '#ffffff',
-                            top: `${4 + index * 2}px`,
-                            zIndex: 10 + index,
-                            opacity: draggedEventId === event.id ? 0.5 : 1
-                          }}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, event.id)}
-                          onDragEnd={handleDragEnd}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEventClick(event);
-                          }}
-                        >
-                          <div className="font-medium truncate">{event.title}</div>
-                          {event.startTime && event.endTime && (
-                            <div className="text-xs opacity-90 truncate">
-                              {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
-                            </div>
-                          )}
-                          
-                          {/* Tooltip on hover */}
-                          <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">
-                            <div className="font-medium">{event.title}</div>
+                      <AnimatePresence mode="popLayout">
+                        {hourEvents.map((event, index) => (
+                          <motion.div
+                            key={event.id}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 1.2, opacity: 0 }}
+                            transition={{ 
+                              type: "spring", 
+                              damping: 15, 
+                              stiffness: 300,
+                              duration: 0.3
+                            }}
+                            className="absolute inset-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
+                            style={{ 
+                              backgroundColor: getEventColor(event), 
+                              color: '#ffffff',
+                              top: `${4 + index * 2}px`,
+                              zIndex: 10 + index,
+                              opacity: draggedEventId === event.id ? 0.5 : 1
+                            }}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, event.id)}
+                            onDragEnd={handleDragEnd}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEventClick(event);
+                            }}
+                          >
+                            <div className="font-medium truncate">{event.title}</div>
                             {event.startTime && event.endTime && (
-                              <div className="text-gray-300">
+                              <div className="text-xs opacity-90 truncate">
                                 {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
                               </div>
                             )}
-                            {(event.description || event.notes) && (
-                              <div className="text-gray-300 mt-1">
-                                {event.description || event.notes}
+                            
+                            {/* Tooltip on hover */}
+                            <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">
+                              <div className="font-medium">{event.title}</div>
+                              {event.startTime && event.endTime && (
+                                <div className="text-gray-300">
+                                  {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
+                                </div>
+                              )}
+                              {(event.description || event.notes) && (
+                                <div className="text-gray-300 mt-1">
+                                  {event.description || event.notes}
+                                </div>
+                              )}
+                              <div className="text-gray-400 text-xs mt-1">
+                                Click to edit
                               </div>
-                            )}
-                            <div className="text-gray-400 text-xs mt-1">
-                              Click to edit
                             </div>
-                          </div>
-                        </div>
-                      ))}
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
                       {/* Hover indicator */}
                       <div className="absolute inset-0 border-2 border-[#C2EABD] rounded opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none" />
                     </div>

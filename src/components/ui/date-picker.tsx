@@ -105,7 +105,7 @@ export function DatePicker({
                   variant="ghost"
                   size="icon"
                   onClick={handlePrevMonth}
-                  className="h-8 w-8 hover:bg-[#C2EABD]/30"
+                  className="h-7 w-7 hover:bg-[#C2EABD]/30 border-[#C2EABD] text-[#011936]"
                   type="button"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -114,7 +114,7 @@ export function DatePicker({
                   variant="ghost"
                   size="icon"
                   onClick={handleNextMonth}
-                  className="h-8 w-8 hover:bg-[#C2EABD]/30"
+                  className="h-7 w-7 hover:bg-[#C2EABD]/30 border-[#C2EABD] text-[#011936]"
                   type="button"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -127,7 +127,7 @@ export function DatePicker({
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
                 <div
                   key={index}
-                  className="h-8 flex items-center justify-center text-xs font-medium text-[#011936]/70"
+                  className="h-8 flex items-center justify-center text-xs font-medium text-gray-500"
                 >
                   {day}
                 </div>

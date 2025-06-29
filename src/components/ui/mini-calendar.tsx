@@ -51,17 +51,17 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
             variant="ghost"
             size="icon"
             onClick={handlePrevMonth}
-            className="h-6 w-6 hover:bg-[#C2EABD]/30"
+            className="h-7 w-7 hover:bg-[#C2EABD]/30 border-[#C2EABD] text-[#011936]"
           >
-            <ChevronLeft className="h-3 w-3" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleNextMonth}
-            className="h-6 w-6 hover:bg-[#C2EABD]/30"
+            className="h-7 w-7 hover:bg-[#C2EABD]/30 border-[#C2EABD] text-[#011936]"
           >
-            <ChevronRight className="h-3 w-3" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>

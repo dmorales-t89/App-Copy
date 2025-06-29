@@ -1,5 +1,6 @@
 import React from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, startOfWeek, endOfWeek, isToday, parse } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -161,55 +162,66 @@ export function CalendarView({
               </div>
 
               <div className="flex-1 space-y-1 overflow-hidden">
-                {dayEvents.slice(0, 3).map((event) => (
-                  <div
-                    key={event.id}
-                    className="relative group/event"
-                  >
-                    <div
-                      className={cn(
-                        "text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm",
-                        draggedEventId === event.id && "opacity-50"
-                      )}
-                      style={{ 
-                        backgroundColor: getEventColor(event), 
-                        color: '#ffffff'
+                <AnimatePresence mode="popLayout">
+                  {dayEvents.slice(0, 3).map((event) => (
+                    <motion.div
+                      key={event.id}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 1.2, opacity: 0 }}
+                      transition={{ 
+                        type: "spring", 
+                        damping: 15, 
+                        stiffness: 300,
+                        duration: 0.3
                       }}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, event.id)}
-                      onDragEnd={handleDragEnd}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEventClick(event);
-                      }}
+                      className="relative group/event"
                     >
-                      <div className="font-medium leading-tight">
-                        {event.startTime && (
-                          <span className="font-medium mr-1">
-                            {formatEventTime(event)}
-                          </span>
+                      <div
+                        className={cn(
+                          "text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm",
+                          draggedEventId === event.id && "opacity-50"
                         )}
-                        {event.title}
-                      </div>
-                    </div>
-                    
-                    {/* Tooltip on hover */}
-                    <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">
-                      <div className="font-medium">{event.title}</div>
-                      {event.startTime && event.endTime && (
-                        <div className="text-gray-300">
-                          {formatEventTime(event)} - {formatEventEndTime(event)}
+                        style={{ 
+                          backgroundColor: getEventColor(event), 
+                          color: '#ffffff'
+                        }}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, event.id)}
+                        onDragEnd={handleDragEnd}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick(event);
+                        }}
+                      >
+                        <div className="font-medium leading-tight">
+                          {event.startTime && (
+                            <span className="font-medium mr-1">
+                              {formatEventTime(event)}
+                            </span>
+                          )}
+                          {event.title}
                         </div>
-                      )}
-                      {(event.description || event.notes) && (
-                        <div className="text-gray-300 mt-1">{event.description || event.notes}</div>
-                      )}
-                      <div className="text-gray-400 text-xs mt-1">
-                        {groups.find(g => g.id === event.groupId)?.name || 'Calendar'}
                       </div>
-                    </div>
-                  </div>
-                ))}
+                      
+                      {/* Tooltip on hover */}
+                      <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">
+                        <div className="font-medium">{event.title}</div>
+                        {event.startTime && event.endTime && (
+                          <div className="text-gray-300">
+                            {formatEventTime(event)} - {formatEventEndTime(event)}
+                          </div>
+                        )}
+                        {(event.description || event.notes) && (
+                          <div className="text-gray-300 mt-1">{event.description || event.notes}</div>
+                        )}
+                        <div className="text-gray-400 text-xs mt-1">
+                          {groups.find(g => g.id === event.groupId)?.name || 'Calendar'}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
                 {dayEvents.length > 3 && (
                   <div className="text-xs text-gray-600 font-medium">
                     +{dayEvents.length - 3} more
