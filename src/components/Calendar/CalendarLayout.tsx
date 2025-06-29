@@ -17,27 +17,13 @@ import { Event } from '@/types/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { EventFormData, createDefaultEventFormData } from '@/types/EventFormData';
 
 interface Group {
   id: string;
   name: string;
   color: string;
   isVisible?: boolean;
-}
-
-interface EventFormData {
-  title: string;
-  description: string;
-  startDate: Date;
-  endDate: Date;
-  isAllDay: boolean;
-  startTime: string;
-  endTime: string;
-  color: string;
-  groupId: string;
-  isRepeating?: boolean; // ✅ Made optional
-  repeatFrequency?: 'daily' | 'weekly' | 'monthly' | ''; // ✅ Made optional
-  repeatEndDate?: Date | null; // ✅ Made optional
 }
 
 interface ExtractedEvent {
@@ -53,9 +39,9 @@ interface CalendarLayoutProps {
   groups: Group[];
   selectedDate: Date;
   onDateChange: (date: Date) => void;
-  onCreateEvent: (eventData: EventFormData) => Promise<void>; // ✅ Updated to async
-  onUpdateEvent: (eventId: string, eventData: EventFormData) => Promise<void>; // ✅ Updated to async
-  onDeleteEvent: (eventId: string) => Promise<void>; // ✅ Updated to async
+  onCreateEvent: (eventData: EventFormData) => Promise<void>;
+  onUpdateEvent: (eventId: string, eventData: EventFormData) => Promise<void>;
+  onDeleteEvent: (eventId: string) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -148,7 +134,6 @@ export function CalendarLayout({
     setShowExtractedEventsSidebar(true);
   };
 
-  // ✅ Fixed: Made this function async to match the prop type
   const handleConfirmExtractedEvent = async (eventData: EventFormData) => {
     console.log('Confirming extracted event:', eventData);
     await onCreateEvent(eventData);
@@ -162,7 +147,7 @@ export function CalendarLayout({
     console.log('Confirming all extracted events');
     
     for (const event of extractedEvents) {
-      const eventData: EventFormData = {
+      const eventData = createDefaultEventFormData({
         title: event.title,
         description: event.description || '',
         startDate: event.date,
@@ -172,11 +157,7 @@ export function CalendarLayout({
         endTime: event.endTime || (event.startTime ? format(new Date(`2000-01-01T${event.startTime}`).getTime() + 60 * 60 * 1000, 'HH:mm') : '10:00'),
         color: groups[0]?.color || '#AEC6CF',
         groupId: groups[0]?.id || '1',
-        // ✅ Optional fields with defaults
-        isRepeating: false,
-        repeatFrequency: '',
-        repeatEndDate: null,
-      };
+      });
       
       await onCreateEvent(eventData);
     }
@@ -208,7 +189,7 @@ export function CalendarLayout({
     if (!draggedEvent) return;
 
     // Create updated event data
-    const updatedEventData: EventFormData = {
+    const updatedEventData = createDefaultEventFormData({
       title: draggedEvent.title,
       description: draggedEvent.description || draggedEvent.notes || '',
       startDate: newDate,
@@ -218,11 +199,7 @@ export function CalendarLayout({
       endTime: newHour !== undefined ? `${(newHour + 1).toString().padStart(2, '0')}:00` : (draggedEvent.endTime || '10:00'),
       color: draggedEvent.color,
       groupId: draggedEvent.groupId,
-      // ✅ Optional fields with defaults
-      isRepeating: false,
-      repeatFrequency: '',
-      repeatEndDate: null,
-    };
+    });
 
     await onUpdateEvent(draggedEventId, updatedEventData);
     handleEventDragEnd();

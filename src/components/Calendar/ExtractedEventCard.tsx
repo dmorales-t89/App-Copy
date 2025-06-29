@@ -13,6 +13,7 @@ import { Calendar, Clock, MapPin, FileText, Check, X, Palette } from 'lucide-rea
 import { cn } from '@/lib/utils';
 import { HexColorPicker } from 'react-colorful';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { EventFormData, createDefaultEventFormData } from '@/types/EventFormData';
 
 interface ExtractedEvent {
   title: string;
@@ -31,20 +32,7 @@ interface Group {
 interface ExtractedEventCardProps {
   event: ExtractedEvent;
   groups: Group[];
-  onConfirm: (eventData: {
-    title: string;
-    description: string;
-    startDate: Date;
-    endDate: Date;
-    isAllDay: boolean;
-    startTime: string;
-    endTime: string;
-    color: string;
-    groupId: string;
-    isRepeating?: boolean; // ✅ Made optional
-    repeatFrequency?: 'daily' | 'weekly' | 'monthly' | ''; // ✅ Made optional
-    repeatEndDate?: Date | null; // ✅ Made optional
-  }) => void;
+  onConfirm: (eventData: EventFormData) => void;
   onDiscard: () => void;
   className?: string;
 }
@@ -195,7 +183,7 @@ export function ExtractedEventCard({
       endDateTime = set(selectedDate, { hours: endHour, minutes: endMinute });
     }
 
-    onConfirm({
+    const eventData = createDefaultEventFormData({
       title,
       description,
       startDate: startDateTime,
@@ -205,11 +193,9 @@ export function ExtractedEventCard({
       endTime,
       color: selectedColor,
       groupId: selectedGroupId,
-      // ✅ Optional fields with defaults
-      isRepeating: false,
-      repeatFrequency: '',
-      repeatEndDate: null,
     });
+
+    onConfirm(eventData);
   };
 
   const handleGroupChange = (groupId: string) => {

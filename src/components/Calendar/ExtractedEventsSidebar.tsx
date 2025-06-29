@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { X, Sparkles, Calendar, CheckCircle } from 'lucide-react';
 import { ExtractedEventCard } from './ExtractedEventCard';
+import { EventFormData } from '@/types/EventFormData';
 
 interface ExtractedEvent {
   title: string;
@@ -20,29 +21,14 @@ interface Group {
   color: string;
 }
 
-interface EventFormData {
-  title: string;
-  description: string;
-  startDate: Date;
-  endDate: Date;
-  isAllDay: boolean;
-  startTime: string;
-  endTime: string;
-  color: string;
-  groupId: string;
-  isRepeating?: boolean; // ✅ Made optional
-  repeatFrequency?: 'daily' | 'weekly' | 'monthly' | ''; // ✅ Made optional
-  repeatEndDate?: Date | null; // ✅ Made optional
-}
-
 interface ExtractedEventsSidebarProps {
   isOpen: boolean;
   events: ExtractedEvent[];
   groups: Group[];
   onClose: () => void;
-  onConfirmEvent: (eventData: EventFormData) => Promise<void>; // ✅ Updated to async
+  onConfirmEvent: (eventData: EventFormData) => Promise<void>;
   onDiscardEvent: (index: number) => void;
-  onConfirmAll: () => Promise<void>; // ✅ Updated to async
+  onConfirmAll: () => Promise<void>;
   onDiscardAll: () => void;
 }
 
@@ -57,7 +43,7 @@ export function ExtractedEventsSidebar({
   onDiscardAll,
 }: ExtractedEventsSidebarProps) {
   const handleConfirmEvent = async (eventData: EventFormData, index: number) => {
-    await onConfirmEvent(eventData); // ✅ Now properly awaits async function
+    await onConfirmEvent(eventData);
     onDiscardEvent(index); // Remove from extracted events after confirming
   };
 
