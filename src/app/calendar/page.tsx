@@ -7,6 +7,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { Database } from '@/lib/database.types';
 import { format, addDays, addWeeks, addMonths, isBefore, parseISO, isSameDay } from 'date-fns';
+import { isValidUuid } from '@/lib/utils';
 
 interface Event {
   id: string;
@@ -207,6 +208,13 @@ export default function CalendarPage() {
       // Extract the base event ID (remove occurrence suffix if present)
       const baseEventId = eventId.includes('-') ? eventId.split('-')[0] : eventId;
       
+      // Validate UUID before making database call
+      if (!isValidUuid(baseEventId)) {
+        console.error('Invalid UUID format for event ID:', baseEventId);
+        alert('Unable to update event: Invalid event ID format');
+        return;
+      }
+      
       const updatedEvent = {
         title: eventData.title,
         date: format(eventData.startDate, 'yyyy-MM-dd'),
@@ -294,6 +302,13 @@ export default function CalendarPage() {
       // Extract the base event ID (remove occurrence suffix if present)
       const baseEventId = eventId.includes('-') ? eventId.split('-')[0] : eventId;
       
+      // Validate UUID before making database call
+      if (!isValidUuid(baseEventId)) {
+        console.error('Invalid UUID format for event ID:', baseEventId);
+        alert('Unable to delete event: Invalid event ID format');
+        return;
+      }
+      
       const { error } = await supabase
         .from('events')
         .delete()
@@ -360,6 +375,12 @@ export default function CalendarPage() {
           const allEvents: Event[] = [];
           
           data.forEach(event => {
+            // Validate UUID before processing
+            if (!isValidUuid(event.id)) {
+              console.warn('Skipping event with invalid UUID:', event.id, event.title);
+              return;
+            }
+
             const transformedEvent: Event = {
               id: event.id,
               title: event.title,
