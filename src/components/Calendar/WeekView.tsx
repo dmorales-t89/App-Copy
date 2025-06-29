@@ -115,40 +115,48 @@ export function WeekView({
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Week header - Using CSS Grid with proper column definitions */}
-      <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-gray-200">
-        <div className="p-3 bg-gray-50 border-r border-gray-200" />
-        {weekDays.map((day) => (
-          <div
-            key={day.toString()}
-            className="p-3 text-center bg-gray-50 border-r border-gray-200 last:border-r-0"
-          >
-            <div className="text-sm font-medium text-[#011936]">{format(day, 'EEE')}</div>
-            <div className={cn(
-              "text-lg font-semibold mt-1 w-8 h-8 flex items-center justify-center rounded-full mx-auto",
-              isSameDay(day, new Date()) ? "bg-[#C2EABD] text-[#011936]" : "text-[#011936]"
-            )}>
-              {format(day, 'd')}
+    <div className="h-full flex flex-col bg-white">
+      {/* Week header - Fixed grid structure */}
+      <div className="flex border-b border-gray-200 bg-white sticky top-0 z-10">
+        {/* Time column header */}
+        <div className="w-20 flex-shrink-0 p-3 bg-gray-50 border-r border-gray-200"></div>
+        
+        {/* Day headers */}
+        <div className="flex-1 grid grid-cols-7">
+          {weekDays.map((day, index) => (
+            <div
+              key={day.toString()}
+              className={cn(
+                "p-3 text-center bg-gray-50 border-r border-gray-200",
+                index === 6 && "border-r-0" // Remove border from last column
+              )}
+            >
+              <div className="text-sm font-medium text-gray-700">{format(day, 'EEE')}</div>
+              <div className={cn(
+                "text-lg font-semibold mt-1 w-8 h-8 flex items-center justify-center rounded-full mx-auto",
+                isSameDay(day, new Date()) ? "bg-[#C2EABD] text-[#011936]" : "text-gray-900"
+              )}>
+                {format(day, 'd')}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Time slots - Single CSS Grid with all columns defined */}
+      {/* Time slots - Consistent flex structure */}
       <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-[80px_repeat(7,1fr)] auto-rows-[64px]">
-          {hours.map((hour) => (
-            <React.Fragment key={hour}>
-              {/* Time label cell */}
-              <div className="p-2 bg-gray-50 flex items-start border-r border-b border-gray-200">
-                <span className="text-xs text-[#011936]/70 font-medium">
-                  {formatHourLabel(hour)}
-                </span>
-              </div>
-              
-              {/* Day cells for this hour */}
-              {weekDays.map((day) => {
+        {hours.map((hour) => (
+          <div key={hour} className="flex border-b border-gray-200 h-16">
+            {/* Time label */}
+            <div className="w-20 flex-shrink-0 p-2 bg-gray-50 border-r border-gray-200 flex items-start justify-end">
+              <span className="text-xs text-gray-600 font-medium pr-2">
+                {formatHourLabel(hour)}
+              </span>
+            </div>
+            
+            {/* Day cells for this hour */}
+            <div className="flex-1 grid grid-cols-7">
+              {weekDays.map((day, dayIndex) => {
                 const hourEvents = getHourEvents(day, hour);
                 const isTarget = isDropTarget(day, hour);
                 
@@ -156,10 +164,11 @@ export function WeekView({
                   <div
                     key={`${day.toString()}-${hour}`}
                     className={cn(
-                      "p-1 cursor-pointer relative group transition-colors border-r border-b border-gray-200 last:border-r-0",
+                      "relative p-1 cursor-pointer group transition-colors border-r border-gray-200 h-16",
+                      dayIndex === 6 && "border-r-0", // Remove border from last column
                       isTarget 
                         ? "bg-blue-100 border-2 border-blue-300" 
-                        : "hover:bg-[#C2EABD]/5"
+                        : "hover:bg-gray-50"
                     )}
                     onClick={() => onTimeSlotClick(day, hour)}
                     onDragOver={(e) => handleDragOver(e, day, hour)}
@@ -228,9 +237,9 @@ export function WeekView({
                   </div>
                 );
               })}
-            </React.Fragment>
-          ))}
-        </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
