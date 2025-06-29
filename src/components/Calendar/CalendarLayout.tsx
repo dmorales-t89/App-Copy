@@ -188,11 +188,6 @@ export function CalendarLayout({
     setShowExtractedEventsSidebar(false);
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.replace('/');
-  };
-
   // Drag and drop handlers
   const handleEventDragStart = (eventId: string) => {
     setDraggedEventId(eventId);
@@ -242,6 +237,11 @@ export function CalendarLayout({
     setDropTargetHour(null);
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/');
+  };
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (event.description && event.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -251,20 +251,20 @@ export function CalendarLayout({
 
   return (
     <div className="h-screen flex bg-white">
-      {/* Left Sidebar - Google Calendar Style */}
+      {/* Left Sidebar - Animated width */}
       <AnimatePresence initial={false}>
         {isSidebarOpen && (
           <motion.div
-            initial={{ x: -280, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -280, opacity: 0 }}
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 280, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
             transition={{ 
               type: "spring", 
               damping: 20, 
               stiffness: 150,
               mass: 1
             }}
-            className="w-[280px] border-r border-gray-200 bg-gray-50 overflow-y-auto"
+            className="border-r border-gray-200 bg-gray-50 overflow-y-auto"
           >
             <div className="p-4 space-y-6">
               {/* Create Button - Google Calendar Style */}
@@ -352,19 +352,8 @@ export function CalendarLayout({
         )}
       </AnimatePresence>
 
-      {/* Main Content - Animated width based on sidebar state */}
-      <motion.div 
-        className="flex flex-col overflow-hidden"
-        animate={{ 
-          width: isSidebarOpen ? 'calc(100% - 280px)' : '100%'
-        }}
-        transition={{ 
-          type: "spring", 
-          damping: 20, 
-          stiffness: 150,
-          mass: 1
-        }}
-      >
+      {/* Main Content - Flex layout that adjusts to sidebars */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
           <div className="flex items-center gap-4">
@@ -501,17 +490,22 @@ export function CalendarLayout({
             />
           )}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Event Form Sidebar */}
+      {/* Event Form Sidebar - Animated width */}
       <AnimatePresence>
         {showEventForm && (
           <motion.div
-            initial={{ x: 400 }}
-            animate={{ x: 0 }}
-            exit={{ x: 400 }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 h-full w-[400px] bg-white/95 backdrop-blur-sm shadow-lg border-l border-gray-200 overflow-y-auto z-50"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 400, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ 
+              type: "spring", 
+              damping: 20, 
+              stiffness: 150,
+              mass: 1
+            }}
+            className="bg-white/95 backdrop-blur-sm shadow-lg border-l border-gray-200 overflow-y-auto"
           >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">

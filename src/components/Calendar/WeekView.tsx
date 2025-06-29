@@ -116,128 +116,120 @@ export function WeekView({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Week header */}
-      <div className="grid grid-cols-[80px_1fr] border-b border-gray-200">
+      {/* Week header - Using CSS Grid with proper column definitions */}
+      <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-gray-200">
         <div className="p-3 bg-gray-50 border-r border-gray-200" />
-        <div className="grid grid-cols-7 divide-x divide-gray-200">
-          {weekDays.map((day) => (
-            <div
-              key={day.toString()}
-              className="p-3 text-center bg-gray-50"
-            >
-              <div className="text-sm font-medium text-[#011936]">{format(day, 'EEE')}</div>
-              <div className={cn(
-                "text-lg font-semibold mt-1 w-8 h-8 flex items-center justify-center rounded-full mx-auto",
-                isSameDay(day, new Date()) ? "bg-[#C2EABD] text-[#011936]" : "text-[#011936]"
-              )}>
-                {format(day, 'd')}
-              </div>
+        {weekDays.map((day) => (
+          <div
+            key={day.toString()}
+            className="p-3 text-center bg-gray-50 border-r border-gray-200 last:border-r-0"
+          >
+            <div className="text-sm font-medium text-[#011936]">{format(day, 'EEE')}</div>
+            <div className={cn(
+              "text-lg font-semibold mt-1 w-8 h-8 flex items-center justify-center rounded-full mx-auto",
+              isSameDay(day, new Date()) ? "bg-[#C2EABD] text-[#011936]" : "text-[#011936]"
+            )}>
+              {format(day, 'd')}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
-      {/* Time slots */}
+      {/* Time slots - Single CSS Grid with all columns defined */}
       <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-[80px_1fr]">
-          {/* Time labels */}
-          <div className="border-r border-gray-200">
-            {hours.map((hour) => (
-              <div key={hour} className="h-16 p-2 bg-gray-50 flex items-start border-b border-gray-200">
+        <div className="grid grid-cols-[80px_repeat(7,1fr)] auto-rows-[64px]">
+          {hours.map((hour) => (
+            <React.Fragment key={hour}>
+              {/* Time label cell */}
+              <div className="p-2 bg-gray-50 flex items-start border-r border-b border-gray-200">
                 <span className="text-xs text-[#011936]/70 font-medium">
                   {formatHourLabel(hour)}
                 </span>
               </div>
-            ))}
-          </div>
-
-          {/* Time slots grid */}
-          <div className="grid grid-cols-7 divide-x divide-gray-200">
-            {weekDays.map((day) => (
-              <div key={day.toString()}>
-                {hours.map((hour) => {
-                  const hourEvents = getHourEvents(day, hour);
-                  const isTarget = isDropTarget(day, hour);
-                  
-                  return (
-                    <div
-                      key={hour}
-                      className={cn(
-                        "h-16 p-1 cursor-pointer relative group transition-colors border-b border-gray-200",
-                        isTarget 
-                          ? "bg-blue-100 border-2 border-blue-300" 
-                          : "hover:bg-[#C2EABD]/5 border-2 border-transparent"
-                      )}
-                      onClick={() => onTimeSlotClick(day, hour)}
-                      onDragOver={(e) => handleDragOver(e, day, hour)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, day, hour)}
-                    >
-                      <AnimatePresence mode="wait">
-                        {hourEvents.map((event, index) => (
-                          <motion.div
-                            key={event.id}
-                            initial={{ scale: 0.7, opacity: 0, y: 10 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 1.3, opacity: 0, y: -10 }}
-                            transition={{ 
-                              type: "spring", 
-                              damping: 12, 
-                              stiffness: 400,
-                              mass: 0.8,
-                              duration: 0.4
-                            }}
-                            className="absolute inset-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
-                            style={{ 
-                              backgroundColor: getEventColor(event), 
-                              color: '#ffffff',
-                              top: `${4 + index * 2}px`,
-                              zIndex: 10 + index,
-                              opacity: draggedEventId === event.id ? 0.5 : 1
-                            }}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, event.id)}
-                            onDragEnd={handleDragEnd}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEventClick(event);
-                            }}
-                          >
-                            <div className="font-medium truncate">{event.title}</div>
+              
+              {/* Day cells for this hour */}
+              {weekDays.map((day) => {
+                const hourEvents = getHourEvents(day, hour);
+                const isTarget = isDropTarget(day, hour);
+                
+                return (
+                  <div
+                    key={`${day.toString()}-${hour}`}
+                    className={cn(
+                      "p-1 cursor-pointer relative group transition-colors border-r border-b border-gray-200 last:border-r-0",
+                      isTarget 
+                        ? "bg-blue-100 border-2 border-blue-300" 
+                        : "hover:bg-[#C2EABD]/5"
+                    )}
+                    onClick={() => onTimeSlotClick(day, hour)}
+                    onDragOver={(e) => handleDragOver(e, day, hour)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, day, hour)}
+                  >
+                    <AnimatePresence mode="wait">
+                      {hourEvents.map((event, index) => (
+                        <motion.div
+                          key={event.id}
+                          initial={{ scale: 0.7, opacity: 0, y: 10 }}
+                          animate={{ scale: 1, opacity: 1, y: 0 }}
+                          exit={{ scale: 1.3, opacity: 0, y: -10 }}
+                          transition={{ 
+                            type: "spring", 
+                            damping: 12, 
+                            stiffness: 400,
+                            mass: 0.8,
+                            duration: 0.4
+                          }}
+                          className="absolute inset-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
+                          style={{ 
+                            backgroundColor: getEventColor(event), 
+                            color: '#ffffff',
+                            top: `${4 + index * 2}px`,
+                            zIndex: 10 + index,
+                            opacity: draggedEventId === event.id ? 0.5 : 1
+                          }}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, event.id)}
+                          onDragEnd={handleDragEnd}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEventClick(event);
+                          }}
+                        >
+                          <div className="font-medium truncate">{event.title}</div>
+                          {event.startTime && event.endTime && (
+                            <div className="text-xs opacity-90 truncate">
+                              {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
+                            </div>
+                          )}
+                          
+                          {/* Tooltip on hover */}
+                          <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">
+                            <div className="font-medium">{event.title}</div>
                             {event.startTime && event.endTime && (
-                              <div className="text-xs opacity-90 truncate">
+                              <div className="text-gray-300">
                                 {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
                               </div>
                             )}
-                            
-                            {/* Tooltip on hover */}
-                            <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">
-                              <div className="font-medium">{event.title}</div>
-                              {event.startTime && event.endTime && (
-                                <div className="text-gray-300">
-                                  {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
-                                </div>
-                              )}
-                              {(event.description || event.notes) && (
-                                <div className="text-gray-300 mt-1">
-                                  {event.description || event.notes}
-                                </div>
-                              )}
-                              <div className="text-gray-400 text-xs mt-1">
-                                Click to edit
+                            {(event.description || event.notes) && (
+                              <div className="text-gray-300 mt-1">
+                                {event.description || event.notes}
                               </div>
+                            )}
+                            <div className="text-gray-400 text-xs mt-1">
+                              Click to edit
                             </div>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                      {/* Hover indicator */}
-                      <div className="absolute inset-0 border-2 border-[#C2EABD] rounded opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none" />
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                    {/* Hover indicator */}
+                    <div className="absolute inset-0 border-2 border-[#C2EABD] rounded opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none" />
+                  </div>
+                );
+              })}
+            </React.Fragment>
+          ))}
         </div>
       </div>
     </div>
