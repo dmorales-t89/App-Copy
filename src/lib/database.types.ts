@@ -22,6 +22,8 @@ export interface Database {
           image_url: string | null
           group_id: string
           notes: string | null
+          recurrence_rule: string | null
+          recurrence_end_date: string | null
         }
         Insert: {
           id?: string
@@ -35,6 +37,8 @@ export interface Database {
           image_url?: string | null
           group_id: string
           notes?: string | null
+          recurrence_rule?: string | null
+          recurrence_end_date?: string | null
         }
         Update: {
           id?: string
@@ -48,6 +52,8 @@ export interface Database {
           image_url?: string | null
           group_id?: string
           notes?: string | null
+          recurrence_rule?: string | null
+          recurrence_end_date?: string | null
         }
       }
     }

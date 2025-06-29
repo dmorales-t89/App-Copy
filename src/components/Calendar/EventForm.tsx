@@ -62,7 +62,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
       color: editingEvent?.color || groups[0]?.color || '#AEC6CF',
       groupId: editingEvent?.groupId || groups[0]?.id || '1',
       isRepeating: !!(editingEvent?.recurrenceRule),
-      repeatFrequency: editingEvent?.recurrenceRule || '',
+      repeatFrequency: (editingEvent?.recurrenceRule as 'daily' | 'weekly' | 'monthly') || '',
       repeatEndDate: editingEvent?.recurrenceEndDate ? new Date(editingEvent.recurrenceEndDate) : null,
     },
   });
@@ -81,7 +81,7 @@ export function EventForm({ initialDate, editingEvent, groups, onSubmit, onDelet
         color: editingEvent.color || groups[0]?.color || '#AEC6CF',
         groupId: editingEvent.groupId || groups[0]?.id || '1',
         isRepeating: !!(editingEvent.recurrenceRule),
-        repeatFrequency: editingEvent.recurrenceRule || '',
+        repeatFrequency: (editingEvent.recurrenceRule as 'daily' | 'weekly' | 'monthly') || '',
         repeatEndDate: editingEvent.recurrenceEndDate ? new Date(editingEvent.recurrenceEndDate) : null,
       });
     } else {

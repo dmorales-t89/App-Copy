@@ -29,10 +29,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const router = useRouter();
 
   // Memoize Supabase client to prevent recreation on every render
-  const supabase = useMemo(() => createClientComponentClient(), []);
+  const supabase = useMemo(() => {
+    if (!isConfigured) return null;
+    return createClientComponentClient();
+  }, [isConfigured]);
 
   useEffect(() => {
-    if (!isConfigured) {
+    if (!isConfigured || !supabase) {
       console.warn('Supabase not configured - skipping auth initialization');
       setLoading(false);
       return;
@@ -46,7 +49,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         );
 
         const sessionPromise = supabase.auth.getSession();
-        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
         
         if (error) {
           console.error('Error getting session:', error);
