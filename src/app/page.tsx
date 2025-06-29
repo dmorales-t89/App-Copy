@@ -4,7 +4,7 @@ import { motion, useSpring, type SpringOptions } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FileUpload } from '@/components/ui/file-upload';
-import { ImageIcon, CalendarIcon, ClockIcon, CheckCircledIcon, MousePointerClickIcon } from '@radix-ui/react-icons';
+import { ImageIcon, CalendarIcon, ClockIcon, CheckCircledIcon, CursorArrowIcon } from '@radix-ui/react-icons';
 import { Loader2Icon } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import Header from '@/components/header';
@@ -178,7 +178,7 @@ export default function Home() {
                   description: "Our AI accurately extracts event details from any image format - screenshots, photos, or PDFs."
                 },
                 {
-                  icon: MousePointerClickIcon,
+                  icon: CursorArrowIcon,
                   title: "Intuitive Drag-and-Drop",
                   description: "Easily reschedule events by dragging them to new dates and times. Organize your calendar with simple, intuitive gestures."
                 },
