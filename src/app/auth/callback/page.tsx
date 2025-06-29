@@ -1,26 +1,14 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Loader2Icon } from 'lucide-react';
 
 export default function AuthCallback() {
-  const router = useRouter();
-
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        // Clear any authentication-related URL parameters and redirect
-        // The AuthContext will automatically handle session parsing from URL hash
-        router.replace('/');
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
-        router.replace(`/login?error=${encodeURIComponent(errorMessage)}`);
-      }
-    };
-
-    handleAuthCallback();
-  }, [router]);
+    // The AuthContext will automatically handle session parsing from URL hash
+    // and perform the appropriate redirect, so we don't need to do anything here
+    // except show a loading state while the AuthContext processes the callback
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#011936] flex items-center justify-center">
