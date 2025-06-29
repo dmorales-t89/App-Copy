@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { isSupabaseConfigured } from '@/lib/supabase';
@@ -28,8 +28,8 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const [isConfigured] = useState(isSupabaseConfigured());
   const router = useRouter();
 
-  // Initialize Supabase client for client components
-  const supabase = createClientComponentClient();
+  // Memoize Supabase client to prevent recreation on every render
+  const supabase = useMemo(() => createClientComponentClient(), []);
 
   useEffect(() => {
     if (!isConfigured) {
