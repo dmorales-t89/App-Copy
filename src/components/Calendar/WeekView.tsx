@@ -78,29 +78,30 @@ export function WeekView({
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, eventId: string) => {
+  // ✅ Fix: Properly type the drag event handler
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, eventId: string) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', eventId);
     onEventDragStart?.(eventId);
   };
 
-  const handleDragEnd = (e: React.DragEvent) => {
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     onEventDragEnd?.();
   };
 
-  const handleDragOver = (e: React.DragEvent, date: Date, hour: number) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     onDragOver?.(date, hour);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     onDragLeave?.();
   };
 
-  const handleDrop = (e: React.DragEvent, date: Date, hour: number) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
     e.preventDefault();
     const eventId = e.dataTransfer.getData('text/plain');
     if (eventId && onEventDrop) {
