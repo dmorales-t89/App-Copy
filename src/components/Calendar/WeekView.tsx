@@ -85,7 +85,7 @@ export function WeekView({
     onEventDragStart?.(eventId);
   };
 
-  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragEnd = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     onEventDragEnd?.();
   };
