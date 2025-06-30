@@ -41,8 +41,8 @@ const getEventPositionAndSize = (event: Event) => {
   const startOffsetMinutes = Math.max(0, startMinutes - 6 * 60);
   const durationMinutes = Math.max(15, endMinutes - startMinutes); // Minimum 15 minutes
   
-  // ✅ Fix: Add 1px to top to start just below the top border
-  const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX + 10;
+  // ✅ Fix: Remove hardcoded offset for precise alignment
+  const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX;
   const height = Math.max(20, (durationMinutes / 60) * HOUR_HEIGHT_PX); // Minimum 20px height
   
   return { top, height };
@@ -96,20 +96,25 @@ export function WeekView({
     }
   };
 
-  // ✅ Framer Motion drag handlers with proper typing
+  // ✅ Framer Motion drag handlers with proper typing and dataTransfer
   const handleFramerDragStart = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
+    // ✅ Set dataTransfer for compatibility with native drop handlers
+    if (event instanceof MouseEvent && event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', eventId);
+    }
     onEventDragStart?.(eventId);
   };
 
   const handleFramerDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
-    // Check if we have a valid drop target
+    // ✅ Check if we have a valid drop target and call onEventDrop
     if (dropTargetDate && dropTargetHour !== null && onEventDrop) {
       onEventDrop(dropTargetDate, dropTargetHour);
     }
+    // ✅ Always call onEventDragEnd to reset drag state
     onEventDragEnd?.();
   };
 
-  // ✅ Standard DOM drag handlers for time slots
+  // ✅ Standard DOM drag handlers for time slots (keep onDragOver and onDragLeave, remove onDrop)
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -166,7 +171,7 @@ export function WeekView({
               </span>
             </div>
             
-            {/* Day columns for this hour */}
+            {/* Day columns for this hour - ✅ Remove onDrop, keep onDragOver and onDragLeave */}
             {weekDays.map((day, dayIndex) => {
               const isTarget = isDropTarget(day, hour);
               
@@ -183,6 +188,7 @@ export function WeekView({
                   onClick={() => onTimeSlotClick(day, hour)}
                   onDragOver={(e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, day, hour)}
                   onDragLeave={handleDragLeave}
+                  // ✅ Removed onDrop - Framer Motion will handle the drop via onDragEnd
                 >
                   {/* Hover indicator */}
                   <div className="absolute inset-0 border-2 border-[#C2EABD] rounded opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none" />
@@ -192,8 +198,8 @@ export function WeekView({
           </div>
         ))}
 
-        {/* ✅ Events Overlay - Positioned absolutely over the entire time grid */}
-        <div className="absolute inset-0 top-[73px] pointer-events-none z-20">
+        {/* ✅ Events Overlay - Positioned absolutely over the entire time grid with corrected top offset */}
+        <div className="absolute inset-0 top-[65px] pointer-events-none z-20">
           <div className="grid grid-cols-8 h-full">
             {/* Empty space for time labels */}
             <div className="border-r border-transparent"></div>
@@ -216,7 +222,10 @@ export function WeekView({
                     return (
                       <motion.div
                         key={event.id}
-                        className="absolute left-1 right-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm group/event pointer-events-auto"
+                        className={cn(
+                          "absolute left-1 right-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm group/event pointer-events-auto",
+                          "max-h-[56px]" // ✅ Add max-height constraint
+                        )}
                         style={{ 
                           backgroundColor: getEventColor(event), 
                           color: '#ffffff',

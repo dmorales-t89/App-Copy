@@ -72,8 +72,12 @@ export function CalendarView({
     }
   };
 
-  // ✅ Fix: Properly typed drag event handlers using framer-motion
+  // ✅ Framer Motion drag handlers with proper typing and dataTransfer
   const handleFramerDragStart = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
+    // ✅ Set dataTransfer for compatibility with native drop handlers
+    if (event instanceof MouseEvent && event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', eventId);
+    }
     onEventDragStart?.(eventId);
   };
 
@@ -81,7 +85,7 @@ export function CalendarView({
     onEventDragEnd?.();
   };
 
-  // ✅ Standard DOM drag handlers for day cells (unchanged)
+  // ✅ Standard DOM drag handlers for day cells
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
