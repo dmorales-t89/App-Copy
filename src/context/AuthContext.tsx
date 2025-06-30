@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured, resetSupabaseClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
@@ -19,27 +19,46 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper function to clear all Supabase auth data from localStorage
-const clearSupabaseAuthData = () => {
-  if (typeof window !== 'undefined') {
-    // Clear all possible Supabase auth keys
-    const keysToRemove = [
-      'supabase.auth.token',
-      'sb-zjtxdbsphjlisenaanmu-auth-token',
-      'sb-auth-token'
-    ];
+// Rate limiting protection
+const rateLimitTracker = {
+  lastRequest: 0,
+  requestCount: 0,
+  resetTime: 0,
+  
+  canMakeRequest(): boolean {
+    const now = Date.now();
     
-    keysToRemove.forEach(key => {
-      localStorage.removeItem(key);
-    });
+    // Reset counter every minute
+    if (now > this.resetTime) {
+      this.requestCount = 0;
+      this.resetTime = now + 60000; // 1 minute
+    }
     
-    // Also clear any keys that start with 'sb-' (Supabase convention)
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('sb-') && key.includes('auth')) {
-        localStorage.removeItem(key);
-      }
-    });
+    // Allow max 5 requests per minute
+    if (this.requestCount >= 5) {
+      return false;
+    }
+    
+    // Minimum 2 seconds between requests
+    if (now - this.lastRequest < 2000) {
+      return false;
+    }
+    
+    this.lastRequest = now;
+    this.requestCount++;
+    return true;
+  },
+  
+  markRateLimited(): void {
+    // If rate limited, wait 2 minutes before allowing requests
+    this.resetTime = Date.now() + 120000;
+    this.requestCount = 10; // Set high to prevent requests
   }
+};
+
+// Helper function to clear all Supabase auth data
+const clearSupabaseAuthData = () => {
+  resetSupabaseClient();
 };
 
 export function AuthContextProvider({ children }: { children: React.ReactNode }) {
@@ -53,6 +72,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   // Add ref to prevent redundant initialization calls
   const hasInitialized = useRef(false);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const authSubscriptionRef = useRef<any>(null);
 
   useEffect(() => {
     if (!isConfigured || !supabase) {
@@ -68,11 +88,19 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
 
     hasInitialized.current = true;
 
-    // Get initial session with timeout and rate limit handling
+    // Get initial session with rate limiting protection
     const getInitialSession = async () => {
       try {
+        // Check rate limiting before making request
+        if (!rateLimitTracker.canMakeRequest()) {
+          console.warn('Rate limit protection: skipping session request');
+          setLoading(false);
+          return;
+        }
+
+        // Shorter timeout to fail fast
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout')), 20000) // Increased timeout to 20 seconds
+          setTimeout(() => reject(new Error('Session timeout')), 5000) // Reduced to 5 seconds
         );
 
         const sessionPromise = supabase.auth.getSession();
@@ -83,23 +111,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
           
           // Handle rate limit errors gracefully
           if (error.message?.includes('rate limit') || error.status === 429) {
-            console.warn('Rate limit encountered, clearing auth data and retrying later');
+            console.warn('Rate limit encountered, marking rate limited');
+            rateLimitTracker.markRateLimited();
             clearSupabaseAuthData();
-            setError('Authentication service is busy. Please wait a moment and try again.');
+            setError('Authentication service is busy. Please wait a few minutes and try again.');
             setUser(null);
             setSession(null);
-            
-            // Clear any existing retry timeout
-            if (retryTimeoutRef.current) {
-              clearTimeout(retryTimeoutRef.current);
-            }
-            
-            // Set a longer timeout before retrying
-            retryTimeoutRef.current = setTimeout(() => {
-              setError(null);
-              hasInitialized.current = false; // Allow retry
-              retryTimeoutRef.current = null;
-            }, 60000); // 60 second delay for rate limits
           } 
           // Handle invalid refresh token errors
           else if (error.status === 400 && (error.message?.includes('refresh_token_not_found') || error.message?.includes('Invalid Refresh Token'))) {
@@ -107,21 +124,14 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
             clearSupabaseAuthData();
             setUser(null);
             setSession(null);
-            setError('Your session has expired. Please sign in again.');
-            
-            // Redirect to login after a short delay
-            setTimeout(() => {
-              setError(null);
-              router.push('/login');
-            }, 2000);
+            setError(null); // Don't show error for expired sessions
           }
           else {
             console.error('Error getting session:', error);
-            setError(`Authentication error: ${error.message}`);
-            // For other errors, also clear auth data to prevent repeated failures
             clearSupabaseAuthData();
             setUser(null);
             setSession(null);
+            setError(null); // Don't show error to avoid UI disruption
           }
         } else {
           setSession(session);
@@ -142,12 +152,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         clearSupabaseAuthData();
         setUser(null);
         setSession(null);
-        
-        if (err instanceof Error && err.message.includes('timeout')) {
-          setError('Authentication service is slow to respond. Please try refreshing the page.');
-        } else {
-          setError('Authentication service encountered an error. Please try again.');
-        }
+        setError(null); // Don't show initialization errors to users
       } finally {
         setLoading(false);
       }
@@ -156,58 +161,64 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     getInitialSession();
 
     // Listen for auth changes with error handling and rate limit protection
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
-        try {
-          console.log('Auth state change:', event, 'Session:', !!session);
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
-          setError(null);
+    if (!authSubscriptionRef.current) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event: AuthChangeEvent, session: Session | null) => {
+          try {
+            console.log('Auth state change:', event, 'Session:', !!session);
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+            setError(null);
 
-          // Handle successful authentication
-          if (event === 'SIGNED_IN' && session) {
-            console.log('User signed in successfully, redirecting to calendar...');
-            
-            // Clear URL parameters after OAuth callback
-            if (typeof window !== 'undefined') {
-              const url = new URL(window.location.href);
-              if (url.hash || url.searchParams.has('access_token') || url.searchParams.has('code')) {
-                window.history.replaceState({}, document.title, window.location.pathname);
+            // Handle successful authentication
+            if (event === 'SIGNED_IN' && session) {
+              console.log('User signed in successfully, redirecting to calendar...');
+              
+              // Clear URL parameters after OAuth callback
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href);
+                if (url.hash || url.searchParams.has('access_token') || url.searchParams.has('code')) {
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                }
               }
+              
+              // Force redirect to calendar with a small delay to ensure state is updated
+              setTimeout(() => {
+                router.push('/calendar');
+              }, 100);
             }
-            
-            // Force redirect to calendar with a small delay to ensure state is updated
-            setTimeout(() => {
-              router.push('/calendar');
-            }, 100);
-          }
 
-          if (event === 'SIGNED_OUT') {
-            console.log('User signed out, clearing auth data and redirecting to home...');
-            clearSupabaseAuthData();
-            router.replace('/');
-          }
+            if (event === 'SIGNED_OUT') {
+              console.log('User signed out, clearing auth data and redirecting to home...');
+              clearSupabaseAuthData();
+              router.replace('/');
+            }
 
-          // Handle token refresh errors
-          if (event === 'TOKEN_REFRESHED' && !session) {
-            console.warn('Token refresh failed, clearing session and auth data');
-            clearSupabaseAuthData();
-            setUser(null);
-            setSession(null);
-            setError('Your session has expired. Please sign in again.');
-            router.push('/login');
+            // Handle token refresh errors
+            if (event === 'TOKEN_REFRESHED' && !session) {
+              console.warn('Token refresh failed, clearing session and auth data');
+              clearSupabaseAuthData();
+              setUser(null);
+              setSession(null);
+              setError(null); // Don't show error for token refresh failures
+            }
+          } catch (err) {
+            console.error('Auth state change error:', err);
+            // Don't set error state for auth state changes to prevent UI disruption
           }
-        } catch (err) {
-          console.error('Auth state change error:', err);
-          // Don't set error state for auth state changes to prevent UI disruption
         }
-      }
-    );
+      );
+      
+      authSubscriptionRef.current = subscription;
+    }
 
     // Cleanup function
     return () => {
-      subscription.unsubscribe();
+      if (authSubscriptionRef.current) {
+        authSubscriptionRef.current.unsubscribe();
+        authSubscriptionRef.current = null;
+      }
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
         retryTimeoutRef.current = null;
@@ -218,6 +229,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const signInWithGoogle = useCallback(async (): Promise<{ error: AuthError | null }> => {
     if (!supabase) {
       const error = { message: 'Authentication not configured' } as AuthError;
+      setError(error.message);
+      return { error };
+    }
+
+    // Check rate limiting
+    if (!rateLimitTracker.canMakeRequest()) {
+      const error = { message: 'Too many requests. Please wait a moment and try again.' } as AuthError;
       setError(error.message);
       return { error };
     }
@@ -240,8 +258,9 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       
       // Handle rate limit errors
       if (result.error?.status === 429 || result.error?.message?.includes('rate limit')) {
+        rateLimitTracker.markRateLimited();
         clearSupabaseAuthData();
-        setError('Too many authentication attempts. Please wait a moment and try again.');
+        setError('Too many authentication attempts. Please wait a few minutes and try again.');
         return { error: result.error };
       }
       
@@ -263,6 +282,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       return { error };
     }
 
+    // Check rate limiting
+    if (!rateLimitTracker.canMakeRequest()) {
+      const error = { message: 'Too many requests. Please wait a moment and try again.' } as AuthError;
+      setError(error.message);
+      return { error };
+    }
+
     try {
       setError(null);
       setLoading(true);
@@ -272,8 +298,9 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       
       // Handle rate limit errors
       if (result.error?.status === 429 || result.error?.message?.includes('rate limit')) {
+        rateLimitTracker.markRateLimited();
         clearSupabaseAuthData();
-        setError('Too many authentication attempts. Please wait a moment and try again.');
+        setError('Too many authentication attempts. Please wait a few minutes and try again.');
         return { error: result.error };
       }
       
@@ -324,6 +351,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       return { error };
     }
 
+    // Check rate limiting
+    if (!rateLimitTracker.canMakeRequest()) {
+      const error = { message: 'Too many requests. Please wait a moment and try again.' } as AuthError;
+      setError(error.message);
+      return { error };
+    }
+
     try {
       setError(null);
       setLoading(true);
@@ -339,8 +373,9 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       if (error) {
         // Handle rate limit errors
         if (error.status === 429 || error.message?.includes('rate limit')) {
+          rateLimitTracker.markRateLimited();
           clearSupabaseAuthData();
-          setError('Too many authentication attempts. Please wait a moment and try again.');
+          setError('Too many authentication attempts. Please wait a few minutes and try again.');
         } else {
           console.error('Email sign-up error:', error);
           setError(error.message);

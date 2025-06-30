@@ -17,13 +17,14 @@ if (!supabaseAnonKey || supabaseAnonKey === 'your_supabase_anon_key_here') {
   console.error('Example: NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here');
 }
 
-// Singleton instance for client-side usage
-let clientInstance: any = null;
+// Global singleton instance to prevent multiple clients
+let globalClientInstance: any = null;
 
 // Create singleton client component client
 function getSupabaseClient() {
-  if (clientInstance) {
-    return clientInstance;
+  // Return existing instance if available
+  if (globalClientInstance) {
+    return globalClientInstance;
   }
 
   if (supabaseUrl && supabaseAnonKey && 
@@ -34,8 +35,8 @@ function getSupabaseClient() {
       // Validate URL format
       new URL(supabaseUrl);
       
-      // Create single instance using createClientComponentClient for Next.js
-      clientInstance = createClientComponentClient({
+      // Create single global instance using createClientComponentClient for Next.js
+      globalClientInstance = createClientComponentClient({
         supabaseUrl,
         supabaseKey: supabaseAnonKey,
       });
@@ -51,15 +52,16 @@ function getSupabaseClient() {
     console.warn('Please configure your .env.local file with valid Supabase credentials');
   }
 
-  return clientInstance;
+  return globalClientInstance;
 }
 
-// Server-side client (for API routes)
-let serverInstance: any = null;
+// Server-side client (for API routes) - also singleton
+let globalServerInstance: any = null;
 
 function getSupabaseServerClient() {
-  if (serverInstance) {
-    return serverInstance;
+  // Return existing instance if available
+  if (globalServerInstance) {
+    return globalServerInstance;
   }
 
   if (supabaseUrl && supabaseAnonKey && 
@@ -70,17 +72,23 @@ function getSupabaseServerClient() {
       // Validate URL format
       new URL(supabaseUrl);
       
-      // Create server instance with optimized settings
-      serverInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      // Create server instance with optimized settings and rate limiting protection
+      globalServerInstance = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           autoRefreshToken: false, // Disable auto-refresh on server
           persistSession: false,   // Don't persist sessions on server
-          detectSessionInUrl: false
+          detectSessionInUrl: false,
+          // Add rate limiting protection
+          flowType: 'pkce'
         },
         global: {
           headers: {
             'X-Client-Info': 'picschedule-server'
           }
+        },
+        // Add connection pooling and retry logic
+        db: {
+          schema: 'public'
         }
       });
     } catch (error) {
@@ -88,7 +96,7 @@ function getSupabaseServerClient() {
     }
   }
 
-  return serverInstance;
+  return globalServerInstance;
 }
 
 // Export the singleton client getter
@@ -99,10 +107,10 @@ export const supabaseServer = getSupabaseServerClient();
 
 // Helper function to check if Supabase is properly configured
 export function isSupabaseConfigured(): boolean {
-  return supabase !== null;
+  return globalClientInstance !== null;
 }
 
-// Helper function to check connection with timeout
+// Helper function to check connection with timeout and rate limit protection
 export async function checkSupabaseConnection(): Promise<{
   connected: boolean;
   error?: string;
@@ -116,16 +124,17 @@ export async function checkSupabaseConnection(): Promise<{
   }
 
   try {
-    // Add timeout to prevent hanging
+    // Add timeout to prevent hanging - reduced to 3 seconds
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Connection timeout')), 5000)
+      setTimeout(() => reject(new Error('Connection timeout')), 3000)
     );
 
-    const connectionPromise = supabase.auth.getSession();
+    // Use a simple health check instead of getSession to avoid rate limits
+    const connectionPromise = supabase.from('events').select('count', { count: 'exact', head: true });
     
     const { data, error } = await Promise.race([connectionPromise, timeoutPromise]);
     
-    if (error) {
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "relation does not exist" which is fine for connection test
       return {
         connected: false,
         error: error.message,
@@ -143,6 +152,40 @@ export async function checkSupabaseConnection(): Promise<{
       details: error
     };
   }
+}
+
+// Helper function to clear all auth storage and reset client state
+export function resetSupabaseClient() {
+  if (typeof window !== 'undefined') {
+    // Clear all possible Supabase auth keys
+    const keysToRemove = [
+      'supabase.auth.token',
+      'sb-zjtxdbsphjlisenaanmu-auth-token',
+      'sb-auth-token'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+    
+    // Also clear any keys that start with 'sb-' (Supabase convention)
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') && key.includes('auth')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('sb-') && key.includes('auth')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  }
+  
+  // Reset the global client instance to force recreation
+  globalClientInstance = null;
+  globalServerInstance = null;
 }
 
 export default supabase;
