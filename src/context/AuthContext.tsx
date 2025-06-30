@@ -127,6 +127,15 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
           setSession(session);
           setUser(session?.user ?? null);
           setError(null);
+          
+          // If we have a valid session and we're on the login page, redirect to calendar
+          if (session?.user && typeof window !== 'undefined') {
+            const currentPath = window.location.pathname;
+            if (currentPath === '/login' || currentPath === '/signup') {
+              console.log('Valid session found on auth page, redirecting to calendar...');
+              router.push('/calendar');
+            }
+          }
         }
       } catch (err) {
         console.error('Session initialization error:', err);
@@ -158,7 +167,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
 
           // Handle successful authentication
           if (event === 'SIGNED_IN' && session) {
-            console.log('User signed in, redirecting to calendar...');
+            console.log('User signed in successfully, redirecting to calendar...');
             
             // Clear URL parameters after OAuth callback
             if (typeof window !== 'undefined') {
@@ -168,8 +177,10 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
               }
             }
             
-            // Immediate redirect to calendar
-            router.push('/calendar');
+            // Force redirect to calendar with a small delay to ensure state is updated
+            setTimeout(() => {
+              router.push('/calendar');
+            }, 100);
           }
 
           if (event === 'SIGNED_OUT') {
@@ -256,7 +267,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       setError(null);
       setLoading(true);
 
-      console.log('Attempting email sign in...');
+      console.log('Attempting email sign in for:', email);
       const result = await supabase.auth.signInWithPassword({ email, password });
       
       // Handle rate limit errors
@@ -276,9 +287,22 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         return { error: result.error };
       }
 
-      if (result.data?.user) {
-        console.log('Sign in successful, user:', result.data.user.email);
-        // The auth state change listener will handle the redirect
+      if (result.data?.user && result.data?.session) {
+        console.log('Sign in successful for user:', result.data.user.email);
+        console.log('Session created:', !!result.data.session);
+        
+        // Update state immediately
+        setUser(result.data.user);
+        setSession(result.data.session);
+        
+        // The auth state change listener will also handle the redirect,
+        // but we can also redirect here as a backup
+        setTimeout(() => {
+          if (typeof window !== 'undefined' && window.location.pathname !== '/calendar') {
+            console.log('Redirecting to calendar after successful sign in...');
+            router.push('/calendar');
+          }
+        }, 500);
       }
       
       return { error: result.error };
@@ -291,7 +315,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const signUpWithEmail = async (email: string, password: string) => {
     if (!supabase) {
