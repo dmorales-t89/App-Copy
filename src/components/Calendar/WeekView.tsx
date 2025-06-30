@@ -41,7 +41,7 @@ const getEventPositionAndSize = (event: Event) => {
   const startOffsetMinutes = Math.max(0, startMinutes - 6 * 60);
   const durationMinutes = Math.max(15, endMinutes - startMinutes); // Minimum 15 minutes
   
-  // ✅ Fix: Remove hardcoded offset for precise alignment
+  // ✅ Fix: Precise alignment with time grid
   const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX;
   const height = Math.max(20, (durationMinutes / 60) * HOUR_HEIGHT_PX); // Minimum 20px height
   
@@ -114,7 +114,7 @@ export function WeekView({
     onEventDragEnd?.();
   };
 
-  // ✅ Standard DOM drag handlers for time slots (keep onDragOver and onDragLeave, remove onDrop)
+  // ✅ Standard DOM drag handlers for time slots
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -171,7 +171,7 @@ export function WeekView({
               </span>
             </div>
             
-            {/* Day columns for this hour - ✅ Remove onDrop, keep onDragOver and onDragLeave */}
+            {/* Day columns for this hour */}
             {weekDays.map((day, dayIndex) => {
               const isTarget = isDropTarget(day, hour);
               
@@ -188,7 +188,6 @@ export function WeekView({
                   onClick={() => onTimeSlotClick(day, hour)}
                   onDragOver={(e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, day, hour)}
                   onDragLeave={handleDragLeave}
-                  // ✅ Removed onDrop - Framer Motion will handle the drop via onDragEnd
                 >
                   {/* Hover indicator */}
                   <div className="absolute inset-0 border-2 border-[#C2EABD] rounded opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none" />
@@ -198,8 +197,8 @@ export function WeekView({
           </div>
         ))}
 
-        {/* ✅ Events Overlay - Positioned absolutely over the entire time grid with corrected top offset */}
-        <div className="absolute inset-0 top-[65px] pointer-events-none z-20">
+        {/* ✅ Events Overlay - Fixed positioning to align with time grid */}
+        <div className="absolute inset-0 top-0 pointer-events-none z-20">
           <div className="grid grid-cols-8 h-full">
             {/* Empty space for time labels */}
             <div className="border-r border-transparent"></div>
@@ -215,6 +214,7 @@ export function WeekView({
                     "relative border-r border-transparent",
                     dayIndex === 6 && "border-r-0"
                   )}
+                  style={{ paddingTop: '65px' }} // Account for header height
                 >
                   {dayEvents.map((event) => {
                     const { top, height } = getEventPositionAndSize(event);
@@ -224,18 +224,18 @@ export function WeekView({
                         key={event.id}
                         className={cn(
                           "absolute left-1 right-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm group/event pointer-events-auto",
-                          "max-h-[56px]" // ✅ Add max-height constraint
+                          "max-h-[56px]"
                         )}
                         style={{ 
                           backgroundColor: getEventColor(event), 
                           color: '#ffffff',
                           top: `${top}px`,
                           height: `${height}px`,
-                          zIndex: draggedEventId === event.id ? 30 : 20,
-                          opacity: draggedEventId === event.id ? 0.5 : 1
+                          zIndex: draggedEventId === event.id ? 9999 : 20, // ✅ High z-index for dragged events
+                          opacity: draggedEventId === event.id ? 0.7 : 1
                         }}
                         drag
-                        dragSnapToOrigin={true}
+                        // ✅ Remove dragSnapToOrigin to prevent snapping back
                         onDragStart={(e, info) => handleFramerDragStart(e, info, event.id)}
                         onDragEnd={(e, info) => handleFramerDragEnd(e, info, event.id)}
                         onClick={(e) => {
@@ -245,7 +245,7 @@ export function WeekView({
                         initial={{ scale: 0.7, opacity: 0, y: 10 }}
                         animate={{ 
                           scale: 1, 
-                          opacity: draggedEventId === event.id ? 0.5 : 1, 
+                          opacity: draggedEventId === event.id ? 0.7 : 1, 
                           y: 0 
                         }}
                         exit={{ scale: 1.3, opacity: 0, y: -10 }}

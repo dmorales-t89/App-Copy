@@ -188,10 +188,10 @@ export function CalendarView({
                         style={{ 
                           backgroundColor: getEventColor(event), 
                           color: '#ffffff',
-                          zIndex: draggedEventId === event.id ? 20 : 10
+                          zIndex: draggedEventId === event.id ? 9999 : 10 // ✅ High z-index for dragged events
                         }}
                         drag
-                        dragSnapToOrigin={true}
+                        // ✅ Remove dragSnapToOrigin to prevent snapping back
                         onDragStart={(e, info) => handleFramerDragStart(e, info, event.id)}
                         onDragEnd={(e, info) => handleFramerDragEnd(e, info, event.id)}
                         onClick={(e) => {
