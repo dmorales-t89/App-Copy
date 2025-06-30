@@ -35,10 +35,27 @@ function getSupabaseClient() {
       // Validate URL format
       new URL(supabaseUrl);
       
-      // Create single global instance using createClientComponentClient for Next.js
+      // Create single global instance with optimized settings
       globalClientInstance = createClientComponentClient({
         supabaseUrl,
         supabaseKey: supabaseAnonKey,
+        options: {
+          auth: {
+            // Disable automatic token refresh to prevent loops
+            autoRefreshToken: false,
+            // Don't persist session to prevent stale token issues
+            persistSession: true,
+            // Don't detect session in URL to prevent conflicts
+            detectSessionInUrl: false,
+            // Use PKCE flow for better security
+            flowType: 'pkce'
+          },
+          global: {
+            headers: {
+              'X-Client-Info': 'picschedule-client'
+            }
+          }
+        }
       });
       
       console.log('✅ Supabase client initialized successfully');
@@ -72,23 +89,18 @@ function getSupabaseServerClient() {
       // Validate URL format
       new URL(supabaseUrl);
       
-      // Create server instance with optimized settings and rate limiting protection
+      // Create server instance with optimized settings
       globalServerInstance = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           autoRefreshToken: false, // Disable auto-refresh on server
           persistSession: false,   // Don't persist sessions on server
           detectSessionInUrl: false,
-          // Add rate limiting protection
           flowType: 'pkce'
         },
         global: {
           headers: {
             'X-Client-Info': 'picschedule-server'
           }
-        },
-        // Add connection pooling and retry logic
-        db: {
-          schema: 'public'
         }
       });
     } catch (error) {
@@ -157,6 +169,8 @@ export async function checkSupabaseConnection(): Promise<{
 // Helper function to clear all auth storage and reset client state
 export function resetSupabaseClient() {
   if (typeof window !== 'undefined') {
+    console.log('Clearing Supabase auth storage...');
+    
     // Clear all possible Supabase auth keys
     const keysToRemove = [
       'supabase.auth.token',
@@ -183,9 +197,16 @@ export function resetSupabaseClient() {
     });
   }
   
-  // Reset the global client instance to force recreation
-  globalClientInstance = null;
-  globalServerInstance = null;
+  // Don't reset the global client instance to avoid creating multiple instances
+  // Just clear the auth state within the existing client
+  if (globalClientInstance) {
+    try {
+      // Force clear the auth state without making network requests
+      globalClientInstance.auth.stopAutoRefresh();
+    } catch (error) {
+      console.warn('Error stopping auto refresh:', error);
+    }
+  }
 }
 
 export default supabase;
