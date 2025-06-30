@@ -202,7 +202,7 @@ export function WeekView({
                           opacity: draggedEventId === event.id ? 0.5 : 1
                         }}
                         draggable
-                        onDragStart={(e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, event.id)}
+                        onDragStart={(e: React.DragEvent<HTMLDivElement>) onDragStart={(e) => handleDragStart(e as React.DragEvent<HTMLDivElement>, event.id)}
                         onDragEnd={handleDragEnd}
                         onClick={(e) => {
                           e.stopPropagation();
