@@ -74,14 +74,15 @@ export function CalendarView({
 
   // ✅ Framer Motion drag handlers with proper typing and dataTransfer
   const handleFramerDragStart = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
-    // ✅ Set dataTransfer for compatibility with native drop handlers
-    if (event instanceof MouseEvent && event.dataTransfer) {
-      event.dataTransfer.setData('text/plain', eventId);
-    }
     onEventDragStart?.(eventId);
   };
 
   const handleFramerDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
+    // ✅ Check if we have a valid drop target and call onEventDrop
+    if (dropTargetDate && onEventDrop) {
+      onEventDrop(dropTargetDate);
+    }
+    // ✅ Always call onEventDragEnd to reset drag state
     onEventDragEnd?.();
   };
 
@@ -183,15 +184,16 @@ export function CalendarView({
                       <motion.div
                         className={cn(
                           "text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm",
-                          draggedEventId === event.id && "opacity-50"
+                          draggedEventId === event.id && "opacity-70"
                         )}
                         style={{ 
                           backgroundColor: getEventColor(event), 
                           color: '#ffffff',
-                          zIndex: draggedEventId === event.id ? 9999 : 10 // ✅ High z-index for dragged events
+                          zIndex: draggedEventId === event.id ? 9999 : 10
                         }}
                         drag
-                        // ✅ Remove dragSnapToOrigin to prevent snapping back
+                        dragConstraints={false}
+                        dragElastic={0}
                         onDragStart={(e, info) => handleFramerDragStart(e, info, event.id)}
                         onDragEnd={(e, info) => handleFramerDragEnd(e, info, event.id)}
                         onClick={(e) => {
