@@ -48,7 +48,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     const getInitialSession = async () => {
       try {
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout')), 10000) // Increased timeout
+          setTimeout(() => reject(new Error('Session timeout')), 20000) // Increased timeout to 20 seconds
         );
 
         const sessionPromise = supabase.auth.getSession();
@@ -64,7 +64,23 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
               setError(null);
               hasInitialized.current = false; // Allow retry
             }, 30000); // 30 second delay
-          } else {
+          } 
+          // Handle invalid refresh token errors
+          else if (error.status === 400 && error.message?.includes('refresh_token_not_found')) {
+            console.warn('Invalid refresh token detected, clearing session');
+            setUser(null);
+            setSession(null);
+            setError('Your session has expired. Please sign in again.');
+            // Clear any stored auth data
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('supabase.auth.token');
+            }
+            // Redirect to login after a short delay
+            setTimeout(() => {
+              router.push('/login');
+            }, 2000);
+          }
+          else {
             console.error('Error getting session:', error);
             setError(`Authentication error: ${error.message}`);
           }
@@ -116,6 +132,15 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
           if (event === 'SIGNED_OUT') {
             console.log('User signed out, redirecting to home...');
             router.replace('/');
+          }
+
+          // Handle token refresh errors
+          if (event === 'TOKEN_REFRESHED' && !session) {
+            console.warn('Token refresh failed, clearing session');
+            setUser(null);
+            setSession(null);
+            setError('Your session has expired. Please sign in again.');
+            router.push('/login');
           }
         } catch (err) {
           console.error('Auth state change error:', err);
