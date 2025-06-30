@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2Icon, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { BoltBadge } from '@/components/BoltBadge';
 
 export default function Header() {
   const { user, loading, signOut } = useAuth();
@@ -71,6 +72,9 @@ export default function Header() {
 
           {/* Auth Buttons */}
           <div className="flex items-center gap-4">
+            {/* Bolt Badge */}
+            <BoltBadge variant="white-circle" size={32} />
+            
             {loading || isNavigating ? (
               <Loader2Icon className="w-5 h-5 animate-spin text-[#C2EABD]" />
             ) : user ? (

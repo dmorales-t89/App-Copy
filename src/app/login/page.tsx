@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2Icon, EyeIcon, EyeOffIcon, AlertCircleIcon } from 'lucide-react';
+import { BoltBadge } from '@/components/BoltBadge';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -64,6 +65,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#011936] flex items-center justify-center p-4">
+      {/* Bolt Badge - Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <BoltBadge variant="white-circle" size={32} />
+      </div>
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
