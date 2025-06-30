@@ -16,8 +16,8 @@ export function BoltBadge({
   size = 32 
 }: BoltBadgeProps) {
   const badgeFile = variant === 'white-circle' 
-    ? '/bolt-badge-white-circle.svg' 
-    : '/bolt-badge-black-circle.svg';
+    ? '/image copy copy.png' 
+    : '/image copy.png';
 
   return (
     <a
