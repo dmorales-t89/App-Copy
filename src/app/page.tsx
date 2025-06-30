@@ -13,6 +13,7 @@ import { AnimatedGridPattern } from '@/components/ui/animated-grid';
 import { AnimatedCalendar } from '@/components/ui/animated-calendar';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { BoltBadge } from '@/components/BoltBadge';
 
 interface ExtractedEvent {
   title: string;
@@ -116,6 +117,11 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#011936] relative overflow-hidden">
       <AnimatedGridPattern className="opacity-30" />
+      
+      {/* Bolt Badge - Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <BoltBadge variant="white-circle" size={40} />
+      </div>
       
       <div className="relative">
         <Header />

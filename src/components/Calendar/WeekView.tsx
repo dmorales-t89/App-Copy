@@ -1,6 +1,6 @@
 import React from 'react';
 import { format, addDays, startOfWeek, parseISO, isSameDay, parse } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -18,6 +18,57 @@ interface WeekViewProps {
   dropTargetDate?: Date | null;
   dropTargetHour?: number | null;
 }
+
+// ✅ Constants for enhanced event display
+const HOUR_HEIGHT_PX = 64;
+
+// ✅ Helper functions for time calculations
+const timeToMinutes = (timeStr: string): number => {
+  try {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  } catch {
+    return 0;
+  }
+};
+
+const minutesToTime = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+};
+
+// ✅ Calculate event position and size for multi-hour display
+const getEventPositionAndSize = (event: Event, eventsInDay: Event[]) => {
+  const startMinutes = event.startTime ? timeToMinutes(event.startTime) : 6 * 60; // Default to 6 AM
+  const endMinutes = event.endTime ? timeToMinutes(event.endTime) : startMinutes + 60; // Default 1 hour
+  
+  // Calculate position relative to 6 AM start
+  const startOffsetMinutes = Math.max(0, startMinutes - 6 * 60);
+  const durationMinutes = Math.max(15, endMinutes - startMinutes); // Minimum 15 minutes
+  
+  const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX;
+  const height = Math.max(20, (durationMinutes / 60) * HOUR_HEIGHT_PX); // Minimum 20px height
+  
+  // Basic overlap handling - find overlapping events
+  const overlappingEvents = eventsInDay.filter(otherEvent => {
+    if (otherEvent.id === event.id) return false;
+    
+    const otherStart = otherEvent.startTime ? timeToMinutes(otherEvent.startTime) : 6 * 60;
+    const otherEnd = otherEvent.endTime ? timeToMinutes(otherEvent.endTime) : otherStart + 60;
+    
+    return !(endMinutes <= otherStart || startMinutes >= otherEnd);
+  });
+  
+  const overlapCount = overlappingEvents.length + 1;
+  const eventIndex = overlappingEvents.findIndex(e => e.id < event.id);
+  const adjustedIndex = eventIndex === -1 ? overlappingEvents.length : eventIndex;
+  
+  const width = overlapCount > 1 ? `${90 / overlapCount}%` : '90%';
+  const left = overlapCount > 1 ? `${(adjustedIndex * 90) / overlapCount + 5}%` : '5%';
+  
+  return { top, height, left, width };
+};
 
 export function WeekView({ 
   currentDate, 
@@ -57,6 +108,13 @@ export function WeekView({
     });
   };
 
+  const getDayEvents = (date: Date) => {
+    return events.filter(event => {
+      const eventDate = parseISO(event.date);
+      return isSameDay(eventDate, date);
+    });
+  };
+
   const getEventColor = (event: Event) => {
     return event.color || '#AEC6CF';
   };
@@ -78,18 +136,16 @@ export function WeekView({
     }
   };
 
-  // ✅ Fix: Properly type the drag event handlers for HTMLDivElement
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, eventId: string) => {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', eventId);
+  // ✅ Fix: Properly typed drag event handlers using framer-motion
+  const handleFramerDragStart = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
     onEventDragStart?.(eventId);
   };
 
-  const handleDragEnd = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
+  const handleFramerDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
     onEventDragEnd?.();
   };
 
+  // ✅ Standard DOM drag handlers for time slots (unchanged)
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -129,7 +185,7 @@ export function WeekView({
             <div
               key={day.toString()}
               className={cn(
-                "p-3 text-center bg-gray-50 border-r border-gray-200",
+                "p-3 text-center bg-gray-50 border-r border-gray-200 relative",
                 index === 6 && "border-r-0" // Remove border from last column
               )}
             >
@@ -140,46 +196,37 @@ export function WeekView({
               )}>
                 {format(day, 'd')}
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Time Rows - Each hour is a single grid row */}
-        {hours.map((hour) => (
-          <div key={hour} className="grid grid-cols-8 border-t border-gray-200 h-16">
-            {/* Time label column */}
-            <div className="bg-gray-50 border-r border-gray-200 p-2 flex items-start justify-end">
-              <span className="text-xs text-gray-600 font-medium pr-2">
-                {formatHourLabel(hour)}
-              </span>
-            </div>
-            
-            {/* Day columns for this hour */}
-            {weekDays.map((day, dayIndex) => {
-              const hourEvents = getHourEvents(day, hour);
-              const isTarget = isDropTarget(day, hour);
               
-              return (
-                <div
-                  key={`${day.toString()}-${hour}`}
-                  className={cn(
-                    "relative cursor-pointer group transition-colors border-r border-gray-200",
-                    dayIndex === 6 && "border-r-0", // Remove border from last column
-                    isTarget 
-                      ? "bg-blue-100 border-2 border-blue-300" 
-                      : "hover:bg-gray-50"
-                  )}
-                  onClick={() => onTimeSlotClick(day, hour)}
-                  onDragOver={(e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, day, hour)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e: React.DragEvent<HTMLDivElement>) => handleDrop(e, day, hour)}
-                >
-                  <AnimatePresence mode="wait">
-                    {hourEvents.map((event, index) => (
+              {/* ✅ Day column container for absolutely positioned events */}
+              <div className="absolute inset-0 top-16 pointer-events-none">
+                <div className="relative h-full">
+                  {getDayEvents(day).map((event) => {
+                    const { top, height, left, width } = getEventPositionAndSize(event, getDayEvents(day));
+                    
+                    return (
                       <motion.div
                         key={event.id}
+                        className="absolute text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event pointer-events-auto"
+                        style={{ 
+                          backgroundColor: getEventColor(event), 
+                          color: '#ffffff',
+                          top: `${top}px`,
+                          height: `${height}px`,
+                          left,
+                          width,
+                          zIndex: draggedEventId === event.id ? 20 : 10,
+                          opacity: draggedEventId === event.id ? 0.5 : 1
+                        }}
+                        drag
+                        dragSnapToOrigin={true}
+                        onDragStart={(e, info) => handleFramerDragStart(e, info, event.id)}
+                        onDragEnd={(e, info) => handleFramerDragEnd(e, info, event.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick(event);
+                        }}
                         initial={{ scale: 0.7, opacity: 0, y: 10 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        animate={{ scale: 1, opacity: draggedEventId === event.id ? 0.5 : 1, y: 0 }}
                         exit={{ scale: 1.3, opacity: 0, y: -10 }}
                         transition={{ 
                           type: "spring", 
@@ -188,29 +235,9 @@ export function WeekView({
                           mass: 0.8,
                           duration: 0.4
                         }}
-                        className="absolute text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event"
-                        style={{ 
-                          backgroundColor: getEventColor(event), 
-                          color: '#ffffff',
-                          // Perfect centering with proper margins
-                          left: '4px',
-                          right: '4px',
-                          top: `${4 + index * 2}px`,
-                          height: 'calc(100% - 8px)',
-                          maxHeight: '56px', // Prevent overflow from cell
-                          zIndex: 10 + index,
-                          opacity: draggedEventId === event.id ? 0.5 : 1
-                        }}
-                        draggable
-                        onDragStart={(e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, event.id)}
-                        onDragEnd={handleDragEnd}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEventClick(event);
-                        }}
                       >
                         <div className="font-medium truncate">{event.title}</div>
-                        {event.startTime && event.endTime && (
+                        {event.startTime && event.endTime && height > 40 && (
                           <div className="text-xs opacity-90 truncate">
                             {formatEventTime(event.startTime)} - {formatEventTime(event.endTime)}
                           </div>
@@ -234,8 +261,43 @@ export function WeekView({
                           </div>
                         </div>
                       </motion.div>
-                    ))}
-                  </AnimatePresence>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Time Rows - Each hour is a single grid row */}
+        {hours.map((hour) => (
+          <div key={hour} className="grid grid-cols-8 border-t border-gray-200" style={{ height: `${HOUR_HEIGHT_PX}px` }}>
+            {/* Time label column */}
+            <div className="bg-gray-50 border-r border-gray-200 p-2 flex items-start justify-end">
+              <span className="text-xs text-gray-600 font-medium pr-2">
+                {formatHourLabel(hour)}
+              </span>
+            </div>
+            
+            {/* Day columns for this hour */}
+            {weekDays.map((day, dayIndex) => {
+              const isTarget = isDropTarget(day, hour);
+              
+              return (
+                <div
+                  key={`${day.toString()}-${hour}`}
+                  className={cn(
+                    "relative cursor-pointer group transition-colors border-r border-gray-200",
+                    dayIndex === 6 && "border-r-0", // Remove border from last column
+                    isTarget 
+                      ? "bg-blue-100 border-2 border-blue-300" 
+                      : "hover:bg-gray-50"
+                  )}
+                  onClick={() => onTimeSlotClick(day, hour)}
+                  onDragOver={(e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, day, hour)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e: React.DragEvent<HTMLDivElement>) => handleDrop(e, day, hour)}
+                >
                   {/* Hover indicator */}
                   <div className="absolute inset-0 border-2 border-[#C2EABD] rounded opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none" />
                 </div>

@@ -14,26 +14,12 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Event } from '@/types/calendar';
 import { HexColorPicker } from 'react-colorful';
+import { EventFormData } from '@/types/EventFormData';
 
 interface Group {
   id: string;
   name: string;
   color: string;
-}
-
-interface EventFormData {
-  title: string;
-  description: string;
-  startDate: Date;
-  endDate: Date;
-  isAllDay: boolean;
-  startTime: string;
-  endTime: string;
-  color: string;
-  groupId: string;
-  isRepeating: boolean;
-  repeatFrequency: 'daily' | 'weekly' | 'monthly' | '';
-  repeatEndDate: Date | null;
 }
 
 interface EventFormProps {

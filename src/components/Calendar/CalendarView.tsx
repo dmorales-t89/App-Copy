@@ -1,6 +1,6 @@
 import React from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, startOfWeek, endOfWeek, isToday, parse } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -72,30 +72,28 @@ export function CalendarView({
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, eventId: string) => {
-    e.stopPropagation();
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', eventId);
+  // ✅ Fix: Properly typed drag event handlers using framer-motion
+  const handleFramerDragStart = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
     onEventDragStart?.(eventId);
   };
 
-  const handleDragEnd = (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleFramerDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
     onEventDragEnd?.();
   };
 
-  const handleDragOver = (e: React.DragEvent, date: Date) => {
+  // ✅ Standard DOM drag handlers for day cells (unchanged)
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     onDragOver?.(date);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     onDragLeave?.();
   };
 
-  const handleDrop = (e: React.DragEvent, date: Date) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, date: Date) => {
     e.preventDefault();
     e.stopPropagation();
     const eventId = e.dataTransfer.getData('text/plain');
@@ -142,9 +140,9 @@ export function CalendarView({
                 "flex flex-col min-h-[120px] relative"
               )}
               onClick={() => onAddEvent(day)}
-              onDragOver={(e) => handleDragOver(e, day)}
+              onDragOver={(e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, day)}
               onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, day)}
+              onDrop={(e: React.DragEvent<HTMLDivElement>) => handleDrop(e, day)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span
@@ -178,18 +176,20 @@ export function CalendarView({
                       }}
                       className="relative group/event"
                     >
-                      <div
+                      <motion.div
                         className={cn(
                           "text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm",
                           draggedEventId === event.id && "opacity-50"
                         )}
                         style={{ 
                           backgroundColor: getEventColor(event), 
-                          color: '#ffffff'
+                          color: '#ffffff',
+                          zIndex: draggedEventId === event.id ? 20 : 10
                         }}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, event.id)}
-                        onDragEnd={handleDragEnd}
+                        drag
+                        dragSnapToOrigin={true}
+                        onDragStart={(e, info) => handleFramerDragStart(e, info, event.id)}
+                        onDragEnd={(e, info) => handleFramerDragEnd(e, info, event.id)}
                         onClick={(e) => {
                           e.stopPropagation();
                           onEventClick(event);
@@ -203,7 +203,7 @@ export function CalendarView({
                           )}
                           {event.title}
                         </div>
-                      </div>
+                      </motion.div>
                       
                       {/* Tooltip on hover */}
                       <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">
