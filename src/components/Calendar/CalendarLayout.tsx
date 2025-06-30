@@ -69,11 +69,6 @@ export function CalendarLayout({
   const [extractedEvents, setExtractedEvents] = useState<ExtractedEvent[]>([]);
   const [showExtractedEventsSidebar, setShowExtractedEventsSidebar] = useState(false);
 
-  // Drag and drop state
-  const [draggedEventId, setDraggedEventId] = useState<string | null>(null);
-  const [dropTargetDate, setDropTargetDate] = useState<Date | null>(null);
-  const [dropTargetHour, setDropTargetHour] = useState<number | null>(null);
-
   const { signOut } = useAuth();
   const router = useRouter();
 
@@ -170,52 +165,6 @@ export function CalendarLayout({
   const handleDiscardAllExtractedEvents = () => {
     setExtractedEvents([]);
     setShowExtractedEventsSidebar(false);
-  };
-
-  // Drag and drop handlers
-  const handleEventDragStart = (eventId: string) => {
-    setDraggedEventId(eventId);
-  };
-
-  const handleEventDragEnd = () => {
-    setDraggedEventId(null);
-    setDropTargetDate(null);
-    setDropTargetHour(null);
-  };
-
-  const handleEventDrop = async (newDate: Date, newHour?: number) => {
-    if (!draggedEventId) return;
-
-    const draggedEvent = events.find(e => e.id === draggedEventId);
-    if (!draggedEvent) return;
-
-    // Create updated event data
-    const updatedEventData = createDefaultEventFormData({
-      title: draggedEvent.title,
-      description: draggedEvent.description || draggedEvent.notes || '',
-      startDate: newDate,
-      endDate: newDate,
-      isAllDay: !draggedEvent.startTime,
-      startTime: newHour !== undefined ? `${newHour.toString().padStart(2, '0')}:00` : (draggedEvent.startTime || '09:00'),
-      endTime: newHour !== undefined ? `${(newHour + 1).toString().padStart(2, '0')}:00` : (draggedEvent.endTime || '10:00'),
-      color: draggedEvent.color,
-      groupId: draggedEvent.groupId,
-    });
-
-    await onUpdateEvent(draggedEventId, updatedEventData);
-    handleEventDragEnd();
-  };
-
-  const handleDragOver = (date: Date, hour?: number) => {
-    setDropTargetDate(date);
-    if (hour !== undefined) {
-      setDropTargetHour(hour);
-    }
-  };
-
-  const handleDragLeave = () => {
-    setDropTargetDate(null);
-    setDropTargetHour(null);
   };
 
   const handleSignOut = async () => {
@@ -451,13 +400,6 @@ export function CalendarLayout({
               onAddEvent={handleDayClick}
               onEventClick={handleEventClick}
               groups={groups}
-              onEventDragStart={handleEventDragStart}
-              onEventDragEnd={handleEventDragEnd}
-              onEventDrop={handleEventDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              draggedEventId={draggedEventId}
-              dropTargetDate={dropTargetDate}
             />
           ) : (
             <WeekView
@@ -465,14 +407,6 @@ export function CalendarLayout({
               events={filteredEvents}
               onTimeSlotClick={handleTimeSlotClick}
               onEventClick={handleEventClick}
-              onEventDragStart={handleEventDragStart}
-              onEventDragEnd={handleEventDragEnd}
-              onEventDrop={handleEventDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              draggedEventId={draggedEventId}
-              dropTargetDate={dropTargetDate}
-              dropTargetHour={dropTargetHour}
             />
           )}
         </div>

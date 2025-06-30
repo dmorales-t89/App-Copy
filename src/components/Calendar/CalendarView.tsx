@@ -1,6 +1,6 @@
 import React from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, startOfWeek, endOfWeek, isToday, parse } from 'date-fns';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -10,13 +10,6 @@ interface CalendarViewProps {
   onAddEvent: (date: Date) => void;
   onEventClick: (event: Event) => void;
   groups: Array<{ id: string; name: string; color: string }>;
-  onEventDragStart?: (eventId: string) => void;
-  onEventDragEnd?: () => void;
-  onEventDrop?: (newDate: Date) => void;
-  onDragOver?: (date: Date) => void;
-  onDragLeave?: () => void;
-  draggedEventId?: string | null;
-  dropTargetDate?: Date | null;
 }
 
 export function CalendarView({ 
@@ -24,14 +17,7 @@ export function CalendarView({
   events, 
   onAddEvent, 
   onEventClick, 
-  groups,
-  onEventDragStart,
-  onEventDragEnd,
-  onEventDrop,
-  onDragOver,
-  onDragLeave,
-  draggedEventId,
-  dropTargetDate
+  groups
 }: CalendarViewProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -72,45 +58,6 @@ export function CalendarView({
     }
   };
 
-  // ✅ Framer Motion drag handlers with proper typing and dataTransfer
-  const handleFramerDragStart = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
-    onEventDragStart?.(eventId);
-  };
-
-  const handleFramerDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
-    // ✅ Check if we have a valid drop target and call onEventDrop
-    if (dropTargetDate && onEventDrop) {
-      onEventDrop(dropTargetDate);
-    }
-    // ✅ Always call onEventDragEnd to reset drag state
-    onEventDragEnd?.();
-  };
-
-  // ✅ Standard DOM drag handlers for day cells
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    onDragOver?.(date);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    onDragLeave?.();
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, date: Date) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const eventId = e.dataTransfer.getData('text/plain');
-    if (eventId && onEventDrop) {
-      onEventDrop(date);
-    }
-  };
-
-  const isDropTarget = (date: Date) => {
-    return dropTargetDate && isSameDay(dropTargetDate, date);
-  };
-
   return (
     <div className="h-full flex flex-col">
       {/* Week day headers */}
@@ -132,22 +79,16 @@ export function CalendarView({
           const isCurrentMonth = isSameMonth(day, currentDate);
           const isDayToday = isToday(day);
           const isSelected = isSameDay(day, currentDate);
-          const isTarget = isDropTarget(day);
 
           return (
             <div
               key={day.toString()}
               className={cn(
-                "border-r border-b border-gray-200 p-2 cursor-pointer transition-colors last:border-r-0 group",
+                "border-r border-b border-gray-200 p-2 cursor-pointer transition-colors last:border-r-0 group hover:bg-gray-50",
                 !isCurrentMonth && "bg-gray-50/50",
-                isTarget && "bg-blue-100 border-2 border-blue-300",
-                !isTarget && "hover:bg-gray-50",
                 "flex flex-col min-h-[120px] relative"
               )}
               onClick={() => onAddEvent(day)}
-              onDragOver={(e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, day)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e: React.DragEvent<HTMLDivElement>) => handleDrop(e, day)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span
@@ -181,21 +122,12 @@ export function CalendarView({
                       }}
                       className="relative group/event"
                     >
-                      <motion.div
-                        className={cn(
-                          "text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm",
-                          draggedEventId === event.id && "opacity-70"
-                        )}
+                      <div
+                        className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
                         style={{ 
                           backgroundColor: getEventColor(event), 
-                          color: '#ffffff',
-                          zIndex: draggedEventId === event.id ? 9999 : 10
+                          color: '#ffffff'
                         }}
-                        drag
-                        dragConstraints={false}
-                        dragElastic={0}
-                        onDragStart={(e, info) => handleFramerDragStart(e, info, event.id)}
-                        onDragEnd={(e, info) => handleFramerDragEnd(e, info, event.id)}
                         onClick={(e) => {
                           e.stopPropagation();
                           onEventClick(event);
@@ -209,7 +141,7 @@ export function CalendarView({
                           )}
                           {event.title}
                         </div>
-                      </motion.div>
+                      </div>
                       
                       {/* Tooltip on hover */}
                       <div className="absolute left-0 top-full mt-1 z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover/event:opacity-100 transition-opacity pointer-events-none min-w-[200px]">

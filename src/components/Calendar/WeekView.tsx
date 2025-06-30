@@ -1,6 +1,6 @@
 import React from 'react';
 import { format, addDays, startOfWeek, parseISO, isSameDay, parse } from 'date-fns';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Event } from '@/types/calendar';
 
@@ -9,20 +9,12 @@ interface WeekViewProps {
   events: Event[];
   onTimeSlotClick: (date: Date, hour: number) => void;
   onEventClick: (event: Event) => void;
-  onEventDragStart?: (eventId: string) => void;
-  onEventDragEnd?: () => void;
-  onEventDrop?: (newDate: Date, newHour?: number) => void;
-  onDragOver?: (date: Date, hour?: number) => void;
-  onDragLeave?: () => void;
-  draggedEventId?: string | null;
-  dropTargetDate?: Date | null;
-  dropTargetHour?: number | null;
 }
 
-// ✅ Constants for enhanced event display
+// Constants for enhanced event display
 const HOUR_HEIGHT_PX = 64;
 
-// ✅ Helper functions for time calculations
+// Helper functions for time calculations
 const timeToMinutes = (timeStr: string): number => {
   try {
     const [hours, minutes] = timeStr.split(':').map(Number);
@@ -32,7 +24,7 @@ const timeToMinutes = (timeStr: string): number => {
   }
 };
 
-// ✅ Calculate event position and size for multi-hour display
+// Calculate event position and size for multi-hour display
 const getEventPositionAndSize = (event: Event) => {
   const startMinutes = event.startTime ? timeToMinutes(event.startTime) : 6 * 60; // Default to 6 AM
   const endMinutes = event.endTime ? timeToMinutes(event.endTime) : startMinutes + 60; // Default 1 hour
@@ -41,8 +33,8 @@ const getEventPositionAndSize = (event: Event) => {
   const startOffsetMinutes = Math.max(0, startMinutes - 6 * 60);
   const durationMinutes = Math.max(15, endMinutes - startMinutes); // Minimum 15 minutes
   
-  // ✅ Fix: Precise alignment with time grid
-  const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX;
+  // Fixed positioning with +12 pixel offset (was +1, now +2, plus additional +10 as requested)
+  const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX + 12;
   const height = Math.max(20, (durationMinutes / 60) * HOUR_HEIGHT_PX); // Minimum 20px height
   
   return { top, height };
@@ -52,15 +44,7 @@ export function WeekView({
   currentDate, 
   events, 
   onTimeSlotClick, 
-  onEventClick,
-  onEventDragStart,
-  onEventDragEnd,
-  onEventDrop,
-  onDragOver,
-  onDragLeave,
-  draggedEventId,
-  dropTargetDate,
-  dropTargetHour
+  onEventClick
 }: WeekViewProps) {
   const weekStart = startOfWeek(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -96,51 +80,10 @@ export function WeekView({
     }
   };
 
-  // ✅ Framer Motion drag handlers with proper typing and dataTransfer
-  const handleFramerDragStart = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
-    onEventDragStart?.(eventId);
-  };
-
-  const handleFramerDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo, eventId: string) => {
-    // ✅ Check if we have a valid drop target and call onEventDrop
-    if (dropTargetDate && dropTargetHour !== null && onEventDrop) {
-      onEventDrop(dropTargetDate, dropTargetHour);
-    }
-    // ✅ Always call onEventDragEnd to reset drag state
-    onEventDragEnd?.();
-  };
-
-  // ✅ Standard DOM drag handlers for time slots
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    onDragOver?.(date, hour);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    onDragLeave?.();
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const eventId = e.dataTransfer.getData('text/plain');
-    if (eventId && onEventDrop) {
-      onEventDrop(date, hour);
-    }
-  };
-
-  const isDropTarget = (date: Date, hour: number) => {
-    return dropTargetDate && 
-           isSameDay(dropTargetDate, date) && 
-           dropTargetHour === hour;
-  };
-
   return (
-    <div className="h-full flex flex-col bg-white relative">
+    <div className="h-full flex flex-col bg-white">
       {/* Single Grid Container for entire calendar */}
-      <div className="flex-1 overflow-y-auto relative">
+      <div className="flex-1 overflow-y-auto">
         {/* Header Row - Part of the same grid */}
         <div className="grid grid-cols-8 sticky top-0 z-10 bg-white border-b border-gray-200">
           {/* Empty corner cell */}
@@ -162,98 +105,32 @@ export function WeekView({
               )}>
                 {format(day, 'd')}
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Time Rows - Each hour is a single grid row */}
-        {hours.map((hour) => (
-          <div key={hour} className="grid grid-cols-8 border-t border-gray-200" style={{ height: `${HOUR_HEIGHT_PX}px` }}>
-            {/* Time label column */}
-            <div className="bg-gray-50 border-r border-gray-200 p-2 flex items-start justify-end">
-              <span className="text-xs text-gray-600 font-medium pr-2">
-                {formatHourLabel(hour)}
-              </span>
-            </div>
-            
-            {/* Day columns for this hour */}
-            {weekDays.map((day, dayIndex) => {
-              const isTarget = isDropTarget(day, hour);
               
-              return (
-                <div
-                  key={`${day.toString()}-${hour}`}
-                  className={cn(
-                    "relative cursor-pointer group transition-colors border-r border-gray-200",
-                    dayIndex === 6 && "border-r-0", // Remove border from last column
-                    isTarget 
-                      ? "bg-blue-100 border-2 border-blue-300" 
-                      : "hover:bg-gray-50"
-                  )}
-                  onClick={() => onTimeSlotClick(day, hour)}
-                  onDragOver={(e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, day, hour)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e: React.DragEvent<HTMLDivElement>) => handleDrop(e, day, hour)}
-                >
-                  {/* Hover indicator */}
-                  <div className="absolute inset-0 border-2 border-[#C2EABD] rounded opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none" />
-                </div>
-              );
-            })}
-          </div>
-        ))}
-
-        {/* ✅ Events Overlay - Fixed positioning to align with time grid */}
-        <div className="absolute inset-0 top-[64px] pointer-events-none z-20">
-          <div className="grid grid-cols-8 h-full">
-            {/* Empty space for time labels */}
-            <div className="border-r border-transparent"></div>
-            
-            {/* Event columns for each day */}
-            {weekDays.map((day, dayIndex) => {
-              const dayEvents = getDayEvents(day);
-              
-              return (
-                <div
-                  key={`events-${day.toString()}`}
-                  className={cn(
-                    "relative border-r border-transparent",
-                    dayIndex === 6 && "border-r-0"
-                  )}
-                >
-                  {dayEvents.map((event) => {
+              {/* Day column container for absolutely positioned events */}
+              <div className="absolute inset-0 top-16 pointer-events-none">
+                <div className="relative h-full">
+                  {getDayEvents(day).map((event) => {
                     const { top, height } = getEventPositionAndSize(event);
                     
                     return (
                       <motion.div
                         key={event.id}
-                        className={cn(
-                          "absolute left-1 right-1 text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm group/event pointer-events-auto",
-                          "max-h-[56px]"
-                        )}
+                        className="absolute text-xs p-2 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group/event pointer-events-auto"
                         style={{ 
                           backgroundColor: getEventColor(event), 
                           color: '#ffffff',
                           top: `${top}px`,
                           height: `${height}px`,
-                          zIndex: draggedEventId === event.id ? 9999 : 20,
-                          opacity: draggedEventId === event.id ? 0.9 : 1
+                          left: '2px',
+                          width: 'calc(100% - 4px)',
+                          zIndex: 10
                         }}
-                        drag
-                        dragConstraints={false}
-                        dragElastic={0}
-                        onDragStart={(e, info) => handleFramerDragStart(e, info, event.id)}
-                        onDragEnd={(e, info) => handleFramerDragEnd(e, info, event.id)}
                         onClick={(e) => {
                           e.stopPropagation();
                           onEventClick(event);
                         }}
                         initial={{ scale: 0.7, opacity: 0, y: 10 }}
-                        animate={{ 
-                          scale: 1, 
-                          opacity: draggedEventId === event.id ? 0.9 : 1, 
-                          y: 0 
-                        }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 1.3, opacity: 0, y: -10 }}
                         transition={{ 
                           type: "spring", 
@@ -291,10 +168,37 @@ export function WeekView({
                     );
                   })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+          ))}
         </div>
+
+        {/* Time Rows - Each hour is a single grid row */}
+        {hours.map((hour) => (
+          <div key={hour} className="grid grid-cols-8 border-t border-gray-200" style={{ height: `${HOUR_HEIGHT_PX}px` }}>
+            {/* Time label column */}
+            <div className="bg-gray-50 border-r border-gray-200 p-2 flex items-start justify-end">
+              <span className="text-xs text-gray-600 font-medium pr-2">
+                {formatHourLabel(hour)}
+              </span>
+            </div>
+            
+            {/* Day columns for this hour */}
+            {weekDays.map((day, dayIndex) => (
+              <div
+                key={`${day.toString()}-${hour}`}
+                className={cn(
+                  "relative cursor-pointer group transition-colors border-r border-gray-200 hover:bg-gray-50",
+                  dayIndex === 6 && "border-r-0" // Remove border from last column
+                )}
+                onClick={() => onTimeSlotClick(day, hour)}
+              >
+                {/* Hover indicator */}
+                <div className="absolute inset-0 border-2 border-[#C2EABD] rounded opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none" />
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
