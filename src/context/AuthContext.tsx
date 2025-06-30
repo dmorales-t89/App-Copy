@@ -74,11 +74,9 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
             // Clear any stored auth data
             if (typeof window !== 'undefined') {
               localStorage.removeItem('supabase.auth.token');
+              // Force a full page reload to clear all client-side state
+              window.location.replace('/login');
             }
-            // Redirect to login after a short delay
-            setTimeout(() => {
-              router.push('/login');
-            }, 2000);
           }
           else {
             console.error('Error getting session:', error);
