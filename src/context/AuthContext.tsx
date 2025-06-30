@@ -19,6 +19,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper function to clear all Supabase auth data from localStorage
+const clearSupabaseAuthData = () => {
+  if (typeof window !== 'undefined') {
+    // Clear all possible Supabase auth keys
+    const keysToRemove = [
+      'supabase.auth.token',
+      'sb-zjtxdbsphjlisenaanmu-auth-token',
+      'sb-auth-token'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    // Also clear any keys that start with 'sb-' (Supabase convention)
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') && key.includes('auth')) {
+        localStorage.removeItem(key);
+      }
+    });
+  }
+};
+
 export function AuthContextProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -29,6 +52,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   
   // Add ref to prevent redundant initialization calls
   const hasInitialized = useRef(false);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isConfigured || !supabase) {
@@ -55,32 +79,49 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
         
         if (error) {
+          console.error('Session error:', error);
+          
           // Handle rate limit errors gracefully
           if (error.message?.includes('rate limit') || error.status === 429) {
-            console.warn('Rate limit encountered, will retry authentication later');
+            console.warn('Rate limit encountered, clearing auth data and retrying later');
+            clearSupabaseAuthData();
             setError('Authentication service is busy. Please wait a moment and try again.');
+            setUser(null);
+            setSession(null);
+            
+            // Clear any existing retry timeout
+            if (retryTimeoutRef.current) {
+              clearTimeout(retryTimeoutRef.current);
+            }
+            
             // Set a longer timeout before retrying
-            setTimeout(() => {
+            retryTimeoutRef.current = setTimeout(() => {
               setError(null);
               hasInitialized.current = false; // Allow retry
-            }, 30000); // 30 second delay
+              retryTimeoutRef.current = null;
+            }, 60000); // 60 second delay for rate limits
           } 
           // Handle invalid refresh token errors
-          else if (error.status === 400 && error.message?.includes('refresh_token_not_found')) {
-            console.warn('Invalid refresh token detected, clearing session');
+          else if (error.status === 400 && (error.message?.includes('refresh_token_not_found') || error.message?.includes('Invalid Refresh Token'))) {
+            console.warn('Invalid refresh token detected, clearing all auth data');
+            clearSupabaseAuthData();
             setUser(null);
             setSession(null);
             setError('Your session has expired. Please sign in again.');
-            // Clear any stored auth data
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('supabase.auth.token');
-              // Force a full page reload to clear all client-side state
-              window.location.replace('/login');
-            }
+            
+            // Redirect to login after a short delay
+            setTimeout(() => {
+              setError(null);
+              router.push('/login');
+            }, 2000);
           }
           else {
             console.error('Error getting session:', error);
             setError(`Authentication error: ${error.message}`);
+            // For other errors, also clear auth data to prevent repeated failures
+            clearSupabaseAuthData();
+            setUser(null);
+            setSession(null);
           }
         } else {
           setSession(session);
@@ -89,6 +130,10 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         }
       } catch (err) {
         console.error('Session initialization error:', err);
+        clearSupabaseAuthData();
+        setUser(null);
+        setSession(null);
+        
         if (err instanceof Error && err.message.includes('timeout')) {
           setError('Authentication service is slow to respond. Please try refreshing the page.');
         } else {
@@ -128,13 +173,15 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
           }
 
           if (event === 'SIGNED_OUT') {
-            console.log('User signed out, redirecting to home...');
+            console.log('User signed out, clearing auth data and redirecting to home...');
+            clearSupabaseAuthData();
             router.replace('/');
           }
 
           // Handle token refresh errors
           if (event === 'TOKEN_REFRESHED' && !session) {
-            console.warn('Token refresh failed, clearing session');
+            console.warn('Token refresh failed, clearing session and auth data');
+            clearSupabaseAuthData();
             setUser(null);
             setSession(null);
             setError('Your session has expired. Please sign in again.');
@@ -147,8 +194,13 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       }
     );
 
+    // Cleanup function
     return () => {
       subscription.unsubscribe();
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     };
   }, [router, isConfigured]);
 
@@ -177,6 +229,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       
       // Handle rate limit errors
       if (result.error?.status === 429 || result.error?.message?.includes('rate limit')) {
+        clearSupabaseAuthData();
         setError('Too many authentication attempts. Please wait a moment and try again.');
         return { error: result.error };
       }
@@ -185,6 +238,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
+      clearSupabaseAuthData();
       return { error: { message: errorMessage } as AuthError };
     } finally {
       setLoading(false);
@@ -207,6 +261,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       
       // Handle rate limit errors
       if (result.error?.status === 429 || result.error?.message?.includes('rate limit')) {
+        clearSupabaseAuthData();
         setError('Too many authentication attempts. Please wait a moment and try again.');
         return { error: result.error };
       }
@@ -214,6 +269,10 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       if (result.error) {
         console.error('Sign in error:', result.error);
         setError(result.error.message);
+        // Clear auth data on sign-in errors to prevent repeated failures
+        if (result.error.status === 400) {
+          clearSupabaseAuthData();
+        }
         return { error: result.error };
       }
 
@@ -227,6 +286,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       console.error('Sign in exception:', err);
       setError(errorMessage);
+      clearSupabaseAuthData();
       return { error: { message: errorMessage } as AuthError };
     } finally {
       setLoading(false);
@@ -255,10 +315,15 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       if (error) {
         // Handle rate limit errors
         if (error.status === 429 || error.message?.includes('rate limit')) {
+          clearSupabaseAuthData();
           setError('Too many authentication attempts. Please wait a moment and try again.');
         } else {
           console.error('Email sign-up error:', error);
           setError(error.message);
+          // Clear auth data on sign-up errors to prevent repeated failures
+          if (error.status === 400) {
+            clearSupabaseAuthData();
+          }
         }
       }
 
@@ -266,6 +331,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
+      clearSupabaseAuthData();
       return { error: { message: errorMessage } as AuthError };
     } finally {
       setLoading(false);
@@ -283,6 +349,9 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       setError(null);
       const { error } = await supabase.auth.signOut();
       
+      // Always clear auth data on sign out, regardless of success/failure
+      clearSupabaseAuthData();
+      
       if (error) {
         // Handle rate limit errors
         if (error.status === 429 || error.message?.includes('rate limit')) {
@@ -297,6 +366,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
+      clearSupabaseAuthData();
       return { error: { message: errorMessage } as AuthError };
     }
   };
