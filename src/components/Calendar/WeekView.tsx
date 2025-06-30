@@ -34,7 +34,7 @@ const getEventPositionAndSize = (event: Event) => {
   const durationMinutes = Math.max(15, endMinutes - startMinutes); // Minimum 15 minutes
   
   // Fixed positioning with +12 pixel offset (was +1, now +2, plus additional +10 as requested)
-  const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX + 12;
+  const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX + 15;
   const height = Math.max(20, (durationMinutes / 60) * HOUR_HEIGHT_PX); // Minimum 20px height
   
   return { top, height };
