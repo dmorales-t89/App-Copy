@@ -13,7 +13,7 @@ interface BoltBadgeProps {
 export function BoltBadge({ 
   variant = 'black-circle', 
   className,
-  size = 32 
+  size = 40 // Increased default size from 32 to 40
 }: BoltBadgeProps) {
   const badgeFile = variant === 'white-circle' 
     ? '/image copy copy.png' 

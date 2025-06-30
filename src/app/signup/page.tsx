@@ -32,7 +32,7 @@ export default function SignupPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!loading && user) {
-      router.push('/');
+      router.push('/calendar');
     }
   }, [user, loading, router]);
 
@@ -83,9 +83,9 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-[#011936] flex items-center justify-center p-4">
-      {/* Bolt Badge - Top Right */}
+      {/* Bolt Badge - Top Right - Increased size */}
       <div className="fixed top-4 right-4 z-50">
-        <BoltBadge variant="white-circle" size={32} />
+        <BoltBadge variant="white-circle" size={48} />
       </div>
       
       <motion.div

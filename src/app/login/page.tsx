@@ -21,7 +21,8 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!loading && user) {
-      router.push('/');
+      console.log('User already authenticated, redirecting to calendar...');
+      router.push('/calendar');
     }
   }, [user, loading, router]);
 
@@ -29,9 +30,11 @@ export default function LoginPage() {
     e.preventDefault();
     if (!email || !password) return;
 
+    console.log('Submitting email login form...');
     const { error } = await signInWithEmail(email, password);
     
     if (error) {
+      console.error('Login error:', error);
       // If user doesn't exist, redirect to signup
       if (error.message.includes('Invalid login credentials') || 
           error.message.includes('Email not confirmed') ||
@@ -40,7 +43,8 @@ export default function LoginPage() {
         return;
       }
     } else {
-      router.push('/');
+      console.log('Login successful, should redirect automatically...');
+      // The AuthContext will handle the redirect automatically
     }
   };
 
@@ -65,9 +69,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#011936] flex items-center justify-center p-4">
-      {/* Bolt Badge - Top Right */}
+      {/* Bolt Badge - Top Right - Increased size */}
       <div className="fixed top-4 right-4 z-50">
-        <BoltBadge variant="white-circle" size={32} />
+        <BoltBadge variant="white-circle" size={48} />
       </div>
       
       <motion.div

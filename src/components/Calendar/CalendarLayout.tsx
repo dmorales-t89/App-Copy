@@ -330,9 +330,9 @@ export function CalendarLayout({
               </div>
             </div>
 
-            {/* Bolt Badge - Bottom Left of Sidebar */}
+            {/* Bolt Badge - Bottom Left of Sidebar - Increased size */}
             <div className="absolute bottom-4 left-4">
-              <BoltBadge variant="black-circle" size={32} />
+              <BoltBadge variant="black-circle" size={44} />
             </div>
           </motion.div>
         )}

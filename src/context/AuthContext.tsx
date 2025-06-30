@@ -91,6 +91,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
         try {
+          console.log('Auth state change:', event, 'Session:', !!session);
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
@@ -98,6 +99,8 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
 
           // Handle successful authentication
           if (event === 'SIGNED_IN' && session) {
+            console.log('User signed in, redirecting to calendar...');
+            
             // Clear URL parameters after OAuth callback
             if (typeof window !== 'undefined') {
               const url = new URL(window.location.href);
@@ -106,13 +109,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
               }
             }
             
-            // Small delay to ensure state is updated before redirect
-            setTimeout(() => {
-              router.replace('/calendar');
-            }, 100);
+            // Immediate redirect to calendar
+            router.push('/calendar');
           }
 
           if (event === 'SIGNED_OUT') {
+            console.log('User signed out, redirecting to home...');
             router.replace('/');
           }
         } catch (err) {
@@ -177,6 +179,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       setError(null);
       setLoading(true);
 
+      console.log('Attempting email sign in...');
       const result = await supabase.auth.signInWithPassword({ email, password });
       
       // Handle rate limit errors
@@ -185,9 +188,21 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         return { error: result.error };
       }
       
+      if (result.error) {
+        console.error('Sign in error:', result.error);
+        setError(result.error.message);
+        return { error: result.error };
+      }
+
+      if (result.data?.user) {
+        console.log('Sign in successful, user:', result.data.user.email);
+        // The auth state change listener will handle the redirect
+      }
+      
       return { error: result.error };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      console.error('Sign in exception:', err);
       setError(errorMessage);
       return { error: { message: errorMessage } as AuthError };
     } finally {

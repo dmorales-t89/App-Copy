@@ -72,8 +72,8 @@ export default function Header() {
 
           {/* Auth Buttons */}
           <div className="flex items-center gap-4">
-            {/* Bolt Badge */}
-            <BoltBadge variant="white-circle" size={32} />
+            {/* Bolt Badge - Increased size */}
+            <BoltBadge variant="white-circle" size={44} />
             
             {loading || isNavigating ? (
               <Loader2Icon className="w-5 h-5 animate-spin text-[#C2EABD]" />
