@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { safeFetch, testConnectivity } from '@/lib/safeFetch';
 
 interface CalendarEvent {
   title: string;
@@ -42,21 +43,20 @@ If no events are found, return: []
 `;
 
 async function testNetworkConnectivity(): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Test basic connectivity to OpenRouter with shorter timeout
-    const testResponse = await fetch('https://openrouter.ai', {
-      method: 'HEAD',
-      signal: AbortSignal.timeout(5000) // Reduced to 5 second timeout
-    });
-    
-    return { success: true };
-  } catch (error) {
-    console.error('Network connectivity test failed:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown network error'
-    };
+  console.log('Testing network connectivity to OpenRouter...');
+  
+  const result = await testConnectivity('https://openrouter.ai', 5000);
+  
+  if (!result.connected) {
+    console.error('Network connectivity test failed:', result.error);
+  } else {
+    console.log('Network connectivity test passed');
   }
+  
+  return {
+    success: result.connected,
+    error: result.error,
+  };
 }
 
 async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: string, retryCount = 0) {
@@ -64,28 +64,19 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
   console.log('API Token starts with:', apiToken ? apiToken.substring(0, 10) + '...' : 'undefined');
   
   const maxRetries = 1; // Reduced retries to fail faster
-  const retryDelay = 2000; // Fixed 2 second delay
   
   // Test network connectivity before making the API call
   if (retryCount === 0) {
-    console.log('Testing network connectivity to OpenRouter...');
     const connectivityTest = await testNetworkConnectivity();
     if (!connectivityTest.success) {
       throw new Error(`NETWORK_UNAVAILABLE: ${connectivityTest.error}`);
     }
-    console.log('Network connectivity test passed');
   }
-  
-  // Create AbortController for timeout handling
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    controller.abort();
-  }, 30000); // Reduced to 30 seconds timeout
 
   try {
     console.log(`Making API request to OpenRouter (attempt ${retryCount + 1}/${maxRetries + 1})...`);
     
-    const response = await fetch(
+    const result = await safeFetch(
       'https://openrouter.ai/api/v1/chat/completions',
       {
         method: 'POST',
@@ -99,7 +90,6 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
         },
         body: JSON.stringify({
           model: 'qwen/qwen2.5-vl-72b-instruct:free',
-
           messages: [
             {
               role: 'user',
@@ -120,93 +110,61 @@ async function callOpenRouterAPI(base64Image: string, prompt: string, apiToken: 
           max_tokens: 1000,
           temperature: 0.1
         }),
-        signal: controller.signal
+        timeout: 30000, // 30 seconds timeout
+        retries: maxRetries - retryCount,
+        logErrors: true,
       }
     );
 
-    // Clear timeout on successful response
-    clearTimeout(timeoutId);
-
-    const responseText = await response.text();
-    console.log('OpenRouter API response status:', response.status);
-    
-    if (!response.ok) {
+    if (!result.success) {
       console.error('OpenRouter API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        responseBody: responseText
+        status: result.status,
+        error: result.error
       });
 
-      if (response.status === 401) {
+      if (result.status === 401) {
         throw new Error('UNAUTHORIZED - Invalid OpenRouter API key. Please check your API key is valid and has sufficient credits.');
       }
 
-      if (response.status === 404) {
+      if (result.status === 404) {
         throw new Error('MODEL_NOT_FOUND - qwen/qwen2.5-vl-72b-instruct:free model not available');
       }
 
-      if (response.status === 503) {
+      if (result.status === 503) {
         throw new Error('MODEL_LOADING - Model is currently loading, please try again');
       }
 
-      throw new Error(`OpenRouter API error: ${response.status} - ${responseText}`);
-    }
-
-    try {
-      const jsonResponse = JSON.parse(responseText);
-      
-      if (!jsonResponse.choices || !jsonResponse.choices[0] || !jsonResponse.choices[0].message) {
-        throw new Error('Invalid response format from OpenRouter API');
+      if (result.isNetworkError) {
+        throw new Error(`NETWORK_ERROR: ${result.error}`);
       }
 
-      console.log('Successfully received response from OpenRouter API');
-      return jsonResponse.choices[0].message.content;
-    } catch (jsonError) {
-      console.error('Failed to parse JSON response from OpenRouter:', {
-        responseText: responseText,
-        jsonError: jsonError instanceof Error ? jsonError.message : 'Unknown JSON parse error'
-      });
-      throw new Error(`Invalid JSON response from OpenRouter: ${responseText}`);
+      if (result.isTimeout) {
+        throw new Error('REQUEST_TIMEOUT: Request timed out after 30 seconds. The AI service may be experiencing high load.');
+      }
+
+      throw new Error(`OpenRouter API error: ${result.status} - ${result.error}`);
     }
+
+    if (!result.data.choices || !result.data.choices[0] || !result.data.choices[0].message) {
+      throw new Error('Invalid response format from OpenRouter API');
+    }
+
+    console.log('Successfully received response from OpenRouter API');
+    return result.data.choices[0].message.content;
   } catch (error) {
-    // Clear timeout on error
-    clearTimeout(timeoutId);
-    
     console.error(`API call failed (attempt ${retryCount + 1}):`, error);
     
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('REQUEST_TIMEOUT: Request timed out after 30 seconds. The AI service may be experiencing high load.');
-    }
-    
-    // Enhanced network error handling
-    if (error instanceof TypeError) {
-      const errorMessage = error.message.toLowerCase();
-      
-      // Check for various network-related errors
-      if (errorMessage.includes('fetch failed') || 
-          errorMessage.includes('network error') ||
-          errorMessage.includes('failed to fetch') ||
-          errorMessage === 'terminated' ||
-          errorMessage.includes('other side closed') ||
-          errorMessage.includes('socket hang up') ||
-          errorMessage.includes('econnreset') ||
-          errorMessage.includes('enotfound') ||
-          errorMessage.includes('econnrefused') ||
-          errorMessage.includes('timeout')) {
-        
-        console.log(`Network error detected: ${error.message}`);
-        
-        if (retryCount < maxRetries) {
-          console.log(`Retrying in ${retryDelay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          return callOpenRouterAPI(base64Image, prompt, apiToken, retryCount + 1);
-        } else {
-          throw new Error(`NETWORK_ERROR: ${error.message}`);
-        }
+    if (error instanceof Error) {
+      // Check for network-related errors and retry if appropriate
+      if ((error.message.includes('NETWORK_ERROR') || error.message.includes('REQUEST_TIMEOUT')) && retryCount < maxRetries) {
+        const retryDelay = 2000; // Fixed 2 second delay
+        console.log(`Retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return callOpenRouterAPI(base64Image, prompt, apiToken, retryCount + 1);
       }
     }
     
-    // Re-throw other errors
+    // Re-throw the error for final handling
     throw error;
   }
 }

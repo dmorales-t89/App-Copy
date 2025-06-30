@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { safeFetch, testConnectivity } from '@/lib/safeFetch';
 
 async function testNetworkConnectivity(): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Test basic connectivity to OpenRouter
-    const testResponse = await fetch('https://openrouter.ai', {
-      method: 'HEAD',
-      signal: AbortSignal.timeout(10000) // 10 second timeout for connectivity test
-    });
-    
-    return { success: true };
-  } catch (error) {
-    console.error('Network connectivity test failed:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown network error'
-    };
+  console.log('Testing network connectivity to OpenRouter...');
+  
+  const result = await testConnectivity('https://openrouter.ai', 10000);
+  
+  if (!result.connected) {
+    console.error('Network connectivity test failed:', result.error);
+  } else {
+    console.log('Network connectivity test passed');
   }
+  
+  return {
+    success: result.connected,
+    error: result.error,
+  };
 }
 
 async function callOpenRouterAPIWithRetry(base64Image: string, retryCount = 0) {
@@ -26,24 +26,16 @@ async function callOpenRouterAPIWithRetry(base64Image: string, retryCount = 0) {
   
   // Test network connectivity before making the API call
   if (retryCount === 0) {
-    console.log('Testing network connectivity to OpenRouter...');
     const connectivityTest = await testNetworkConnectivity();
     if (!connectivityTest.success) {
       throw new Error(`Network connectivity test failed: ${connectivityTest.error}. Please check your internet connection and firewall settings.`);
     }
-    console.log('Network connectivity test passed');
   }
-  
-  // Create AbortController for timeout handling
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    controller.abort();
-  }, 90000); // 90 seconds timeout
 
   try {
     console.log(`Making API request to OpenRouter (attempt ${retryCount + 1}/${maxRetries + 1})...`);
     
-    const response = await fetch('https://openrouter.ai/opengvlab/internvl3-14b:free', {
+    const result = await safeFetch('https://openrouter.ai/opengvlab/internvl3-14b:free', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -55,82 +47,42 @@ async function callOpenRouterAPIWithRetry(base64Image: string, retryCount = 0) {
         image: base64Image,
         prompt: 'Extract event details from this image. Include title, date, time, and any additional notes or description. Format the response as JSON.',
       }),
-      signal: controller.signal
+      timeout: 90000, // 90 seconds timeout
+      retries: maxRetries - retryCount, // Adjust retries based on current attempt
+      logErrors: true,
     });
 
-    // Clear timeout on successful response
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenRouter API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        responseBody: errorText
-      });
-      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    if (!result.success) {
+      if (result.status === 401) {
+        throw new Error('UNAUTHORIZED - Invalid OpenRouter API key. Please check your API key is valid and has sufficient credits.');
+      }
+      
+      if (result.isNetworkError) {
+        throw new Error(`NETWORK_ERROR: ${result.error}`);
+      }
+      
+      if (result.isTimeout) {
+        throw new Error('REQUEST_TIMEOUT: Request timed out after 90 seconds. The AI service may be experiencing high load.');
+      }
+      
+      throw new Error(`OpenRouter API error: ${result.status} - ${result.error}`);
     }
 
-    const data = await response.json();
     console.log('Successfully received response from OpenRouter API');
-    return data;
+    return result.data;
   } catch (error) {
-    // Clear timeout on error
-    clearTimeout(timeoutId);
-    
     console.error(`API call failed (attempt ${retryCount + 1}):`, error);
     
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out after 90 seconds. The AI service may be experiencing high load. Please try again.');
-    }
-    
-    // Enhanced network error handling
-    if (error instanceof TypeError) {
-      const errorMessage = error.message.toLowerCase();
-      
-      // Check for various network-related errors
-      if (errorMessage.includes('fetch failed') || 
-          errorMessage.includes('network error') ||
-          errorMessage.includes('failed to fetch') ||
-          errorMessage === 'terminated' ||
-          errorMessage.includes('other side closed') ||
-          errorMessage.includes('socket hang up') ||
-          errorMessage.includes('econnreset') ||
-          errorMessage.includes('enotfound') ||
-          errorMessage.includes('econnrefused') ||
-          errorMessage.includes('timeout')) {
-        
-        console.log(`Network error detected: ${error.message}`);
-        
-        if (retryCount < maxRetries) {
-          console.log(`Retrying in ${retryDelay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          return callOpenRouterAPIWithRetry(base64Image, retryCount + 1);
-        } else {
-          // Provide detailed network troubleshooting information
-          const networkErrorMessage = `
-Network connection failed after ${maxRetries + 1} attempts. This indicates a connectivity issue between your server and OpenRouter's API.
-
-Possible causes and solutions:
-1. Internet connectivity: Ensure your server has internet access
-2. Firewall/Proxy: Check if outgoing HTTPS connections to openrouter.ai are blocked
-3. DNS resolution: Verify that openrouter.ai can be resolved
-4. Service availability: OpenRouter's API may be temporarily unavailable
-
-Original error: ${error.message}
-
-To troubleshoot:
-- Test connectivity: curl https://openrouter.ai
-- Check DNS: nslookup openrouter.ai
-- Verify firewall settings for outgoing HTTPS (port 443)
-          `.trim();
-          
-          throw new Error(networkErrorMessage);
-        }
+    if (error instanceof Error) {
+      // Check for network-related errors and retry if appropriate
+      if ((error.message.includes('NETWORK_ERROR') || error.message.includes('REQUEST_TIMEOUT')) && retryCount < maxRetries) {
+        console.log(`Retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return callOpenRouterAPIWithRetry(base64Image, retryCount + 1);
       }
     }
     
-    // Re-throw other errors
+    // Re-throw the error for final handling
     throw error;
   }
 }
@@ -233,11 +185,11 @@ export async function POST(request: Request) {
       }
 
       // Check for detailed network error messages
-      if (error.message.includes('Network connection failed after')) {
+      if (error.message.includes('NETWORK_ERROR')) {
         return NextResponse.json(
           { 
             error: 'Network connection failed',
-            details: error.message,
+            details: 'Unable to reach AI service after multiple attempts.',
             troubleshooting: {
               immediate: 'The server cannot reach OpenRouter\'s API',
               causes: [
@@ -260,12 +212,12 @@ export async function POST(request: Request) {
       }
 
       // Check for timeout errors
-      if (error.message.includes('timed out')) {
+      if (error.message.includes('REQUEST_TIMEOUT')) {
         return NextResponse.json(
           { 
             error: 'Request timeout',
-            details: error.message,
-            suggestion: 'The AI service is taking longer than expected. Please try again.'
+            details: 'AI service is taking too long to respond.',
+            suggestion: 'The AI service may be experiencing high load. Please try again or create events manually.'
           },
           { status: 504 }
         );
