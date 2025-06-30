@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { EventFormData, createDefaultEventFormData } from '@/types/EventFormData';
+import { BoltBadge } from '@/components/BoltBadge';
 
 interface Group {
   id: string;
@@ -244,7 +245,7 @@ export function CalendarLayout({
               stiffness: 150,
               mass: 1
             }}
-            className="border-r border-gray-200 bg-gray-50 overflow-y-auto"
+            className="border-r border-gray-200 bg-gray-50 overflow-y-auto relative"
           >
             <div className="p-4 space-y-6">
               {/* Create Button - Google Calendar Style */}
@@ -327,6 +328,11 @@ export function CalendarLayout({
                   Go to Today
                 </Button>
               </div>
+            </div>
+
+            {/* Bolt Badge - Bottom Left of Sidebar */}
+            <div className="absolute bottom-4 left-4">
+              <BoltBadge variant="black-circle" size={32} />
             </div>
           </motion.div>
         )}

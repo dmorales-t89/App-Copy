@@ -9,7 +9,6 @@ import { Database } from '@/lib/database.types';
 import { format, addDays, addWeeks, addMonths, isBefore, parseISO, isSameDay } from 'date-fns';
 import { isValidUuid } from '@/lib/utils';
 import { EventFormData } from '@/types/EventFormData';
-import { BoltBadge } from '@/components/BoltBadge';
 
 interface Event {
   id: string;
@@ -424,11 +423,6 @@ export default function CalendarPage() {
 
   return (
     <div className="h-screen bg-gray-50 relative">
-      {/* Bolt Badge - Top Right */}
-      <div className="fixed top-4 right-4 z-50">
-        <BoltBadge variant="black-circle" size={40} />
-      </div>
-      
       <CalendarLayout 
         events={events}
         groups={groups}

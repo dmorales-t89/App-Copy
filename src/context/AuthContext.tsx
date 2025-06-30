@@ -113,7 +113,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
           }
 
           if (event === 'SIGNED_OUT') {
-            router.replace('/login');
+            router.replace('/');
           }
         } catch (err) {
           console.error('Auth state change error:', err);

@@ -50,22 +50,9 @@ const getEventPositionAndSize = (event: Event, eventsInDay: Event[]) => {
   const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX;
   const height = Math.max(20, (durationMinutes / 60) * HOUR_HEIGHT_PX); // Minimum 20px height
   
-  // Basic overlap handling - find overlapping events
-  const overlappingEvents = eventsInDay.filter(otherEvent => {
-    if (otherEvent.id === event.id) return false;
-    
-    const otherStart = otherEvent.startTime ? timeToMinutes(otherEvent.startTime) : 6 * 60;
-    const otherEnd = otherEvent.endTime ? timeToMinutes(otherEvent.endTime) : otherStart + 60;
-    
-    return !(endMinutes <= otherStart || startMinutes >= otherEnd);
-  });
-  
-  const overlapCount = overlappingEvents.length + 1;
-  const eventIndex = overlappingEvents.findIndex(e => e.id < event.id);
-  const adjustedIndex = eventIndex === -1 ? overlappingEvents.length : eventIndex;
-  
-  const width = overlapCount > 1 ? `${90 / overlapCount}%` : '90%';
-  const left = overlapCount > 1 ? `${(adjustedIndex * 90) / overlapCount + 5}%` : '5%';
+  // ✅ Fixed positioning to prevent shifting
+  const left = '2px';
+  const width = 'calc(100% - 4px)';
   
   return { top, height, left, width };
 };
