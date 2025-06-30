@@ -170,9 +170,9 @@ export function WeekView({
                       : "hover:bg-gray-50"
                   )}
                   onClick={() => onTimeSlotClick(day, hour)}
-                  onDragOver={(e) => handleDragOver(e, day, hour)}
+                  onDragOver={(e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, day, hour)}
                   onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, day, hour)}
+                  onDrop={(e: React.DragEvent<HTMLDivElement>) => handleDrop(e, day, hour)}
                 >
                   <AnimatePresence mode="wait">
                     {hourEvents.map((event, index) => (
@@ -202,7 +202,7 @@ export function WeekView({
                           opacity: draggedEventId === event.id ? 0.5 : 1
                         }}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, event.id)}
+                        onDragStart={(e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, event.id)}
                         onDragEnd={handleDragEnd}
                         onClick={(e) => {
                           e.stopPropagation();
