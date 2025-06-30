@@ -42,7 +42,7 @@ const getEventPositionAndSize = (event: Event) => {
   const durationMinutes = Math.max(15, endMinutes - startMinutes); // Minimum 15 minutes
   
   // ✅ Fix: Add 1px to top to start just below the top border
-  const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX + 1;
+  const top = (startOffsetMinutes / 60) * HOUR_HEIGHT_PX + 3;
   const height = Math.max(20, (durationMinutes / 60) * HOUR_HEIGHT_PX); // Minimum 20px height
   
   return { top, height };
